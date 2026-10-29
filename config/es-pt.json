@@ -1,0 +1,9 @@
+{
+ "extends": "paper.json",
+ "data": {
+  "languages": [
+   "es",
+   "pt"
+  ]
+ }
+}

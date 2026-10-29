@@ -1,0 +1,331 @@
+{
+ "data": {
+  "bytes": {
+   "train": 30000000,
+   "selection": 500000,
+   "reporting": 500000
+  },
+  "unit_coverage": 0.999,
+  "min_unit_bytes": 4,
+  "benchmarks": {
+   "flores": {
+    "url": "https://dl.fbaipublicfiles.com/nllb/flores200_dataset.tar.gz",
+    "sha256": "b8b0b76783024b85797e5cc75064eb83fc5288b41e9654dabc7be6ae944011f6",
+    "members": {
+     "en": "./flores200_dataset/devtest/eng_Latn.devtest",
+     "fr": "./flores200_dataset/devtest/fra_Latn.devtest",
+     "ru": "./flores200_dataset/devtest/rus_Cyrl.devtest",
+     "es": "./flores200_dataset/devtest/spa_Latn.devtest",
+     "pt": "./flores200_dataset/devtest/por_Latn.devtest"
+    }
+   },
+   "treebanks": {
+    "en": {
+     "dev": {
+      "url": "https://raw.githubusercontent.com/UniversalDependencies/UD_English-EWT/r2.18/en_ewt-ud-dev.conllu",
+      "sha256": "39239e0a60db3ae68f4b7036189f11b6692741d10ff8240dd91f74f2760d90f8"
+     },
+     "test": {
+      "url": "https://raw.githubusercontent.com/UniversalDependencies/UD_English-EWT/r2.18/en_ewt-ud-test.conllu",
+      "sha256": "fa024f43dc5da3c5ac02563bc9bd0e974f46cbb1560823976a8f342a37dc494a"
+     }
+    },
+    "fr": {
+     "dev": {
+      "url": "https://raw.githubusercontent.com/UniversalDependencies/UD_French-GSD/r2.18/fr_gsd-ud-dev.conllu",
+      "sha256": "9221e5084cc6a1b1540671cfbd2fc0456efc223b2fe8dd2146c2bad921be02d4"
+     },
+     "test": {
+      "url": "https://raw.githubusercontent.com/UniversalDependencies/UD_French-GSD/r2.18/fr_gsd-ud-test.conllu",
+      "sha256": "eee5a599b429658b6ee8582fae9993eb07161247fc64bad57d16b2050ed4eb1a"
+     }
+    },
+    "ru": {
+     "dev": {
+      "url": "https://raw.githubusercontent.com/UniversalDependencies/UD_Russian-GSD/r2.18/ru_gsd-ud-dev.conllu",
+      "sha256": "e3e3d4e8d1d7544e531b2b81ae64257efacc97f93276ce6d2ce52fd1de052fa2"
+     },
+     "test": {
+      "url": "https://raw.githubusercontent.com/UniversalDependencies/UD_Russian-GSD/r2.18/ru_gsd-ud-test.conllu",
+      "sha256": "f26e022329162a1c6306f76644d06f770f1572501755421165387137fe63138d"
+     }
+    },
+    "es": {
+     "dev": {
+      "url": "https://raw.githubusercontent.com/UniversalDependencies/UD_Spanish-GSD/r2.18/es_gsd-ud-dev.conllu",
+      "sha256": "704fb19afc0a34cff476e1a70351b7026c4364f862e8e8388b02873852567c22"
+     },
+     "test": {
+      "url": "https://raw.githubusercontent.com/UniversalDependencies/UD_Spanish-GSD/r2.18/es_gsd-ud-test.conllu",
+      "sha256": "ecce253f44bffaa9803ae7ec0c10911c13e4f1fc3cb439dbd1db2cebe0a12741"
+     }
+    },
+    "pt": {
+     "dev": {
+      "url": "https://raw.githubusercontent.com/UniversalDependencies/UD_Portuguese-GSD/r2.18/pt_gsd-ud-dev.conllu",
+      "sha256": "0d3b6c8518ad727a26476eb682f58d5dc2bbda0307270d2a7691eb6463a074e6"
+     },
+     "test": {
+      "url": "https://raw.githubusercontent.com/UniversalDependencies/UD_Portuguese-GSD/r2.18/pt_gsd-ud-test.conllu",
+      "sha256": "0572d50de07593d662f7a1ff49490c7c3722612acac1d5c50916deb3d7b02a31"
+     }
+    }
+   },
+   "minimal_pairs": {
+    "en": {
+     "url": "https://huggingface.co/datasets/jumelet/multiblimp/resolve/de923efa8d2483d6b13364ee68e65308e990a991/eng/data.tsv",
+     "sha256": "f4142099383024b643c4d89e679b8ade3ad7e056c6695ff3b3854a52eabb00cd"
+    },
+    "fr": {
+     "url": "https://huggingface.co/datasets/jumelet/multiblimp/resolve/de923efa8d2483d6b13364ee68e65308e990a991/fra/data.tsv",
+     "sha256": "52d2899cb62d25425fc5a756e05f213ef170310afe6fc688d27d42a3b482d8ab"
+    },
+    "ru": {
+     "url": "https://huggingface.co/datasets/jumelet/multiblimp/resolve/de923efa8d2483d6b13364ee68e65308e990a991/rus/data.tsv",
+     "sha256": "00aa2552405c400127046ff269edccc65cf83bdf13cf814a1c19bc9a2550cda9"
+    },
+    "es": {
+     "url": "https://huggingface.co/datasets/jumelet/multiblimp/resolve/de923efa8d2483d6b13364ee68e65308e990a991/spa/data.tsv",
+     "sha256": "cf7ff428a55150576635e5d069793b2e8f59730d37c3121970d9192033709f50"
+    },
+    "pt": {
+     "url": "https://huggingface.co/datasets/jumelet/multiblimp/resolve/de923efa8d2483d6b13364ee68e65308e990a991/por/data.tsv",
+     "sha256": "b6ba89941d29ce1bf832ba6dbcc7c6a2fffc85de8591bb0fd451ff35e2d4bb87"
+    }
+   }
+  },
+  "sources": {
+   "en": "hf://datasets/HuggingFaceFW/fineweb@9bb295ddab0e05d785b879661af7260fed5140fc/sample/10BT",
+   "fr": "hf://datasets/HuggingFaceFW/fineweb-2@af9c13333eb981300149d5ca60a8e9d659b276b9/data/fra_Latn/train",
+   "ru": "hf://datasets/HuggingFaceFW/fineweb-2@af9c13333eb981300149d5ca60a8e9d659b276b9/data/rus_Cyrl/train",
+   "es": "hf://datasets/HuggingFaceFW/fineweb-2@af9c13333eb981300149d5ca60a8e9d659b276b9/data/spa_Latn/train",
+   "pt": "hf://datasets/HuggingFaceFW/fineweb-2@af9c13333eb981300149d5ca60a8e9d659b276b9/data/por_Latn/train"
+  }
+ },
+ "graphones": {
+  "sample": 60000,
+  "rounds": 6,
+  "costs": {
+   "silent": 1.5,
+   "double": 1.5,
+   "extra": 3.0,
+   "pair": 4.5,
+   "unseen": 6.0
+  },
+  "voices": {
+   "en": "en-us",
+   "fr": "fr-fr",
+   "ru": "ru",
+   "es": "es",
+   "pt": "pt-br"
+  }
+ },
+ "trunk_parameters": 15000000,
+ "trunk_width": 420,
+ "context_words": 64,
+ "batch_windows": 16,
+ "passes": 0.9,
+ "model": {
+  "head_dimensions": 64,
+  "width_per_layer": 64,
+  "mlp_ratio": 4.0,
+  "multiple_of": 64,
+  "norm_eps": 1e-05,
+  "rope_theta": 10000.0,
+  "initialiser_range": 0.02,
+  "receiver_fraction": 0.125,
+  "message_rank_divisor": 4,
+  "gate_hidden": 64
+ },
+ "root_seed": 20261005,
+ "learning_rate": 0.0005,
+ "gate_rate": 20.0,
+ "optimiser": {
+  "weight_decay": 0.1,
+  "grad_clip": 1.0,
+  "betas": [
+   0.9,
+   0.999
+  ],
+  "eps": 1e-08,
+  "warmup_fraction": 0.01
+ },
+ "hold": {
+  "fall": 0.1
+ },
+ "precision": "auto",
+ "log_interval": 50,
+ "snapshot_interval": 250,
+ "tables": {
+  "source": "learned-direct",
+  "floor": 0.01
+ },
+ "arms": {
+  "baseline": {
+   "seeds": 10,
+   "projection": true,
+   "input_mlp": false,
+   "code_dims": 512,
+   "matched": false,
+   "receiver_scale": 2,
+   "streams": "split",
+   "mix": "equal",
+   "features": "HGS",
+   "shuffled": false,
+   "hold": false,
+   "release_fraction": null,
+   "release_from": null,
+   "table": null
+  },
+  "baseline-mlp": {
+   "extends": "baseline",
+   "seeds": 10,
+   "input_mlp": true
+  },
+  "split-direct": {
+   "extends": "baseline",
+   "seeds": 10,
+   "projection": false
+  },
+  "triple": {
+   "extends": "baseline",
+   "seeds": 5,
+   "streams": "triple"
+  },
+  "triple-direct": {
+   "extends": "triple",
+   "seeds": 10,
+   "projection": false
+  },
+  "learned": {
+   "extends": "triple",
+   "seeds": 5,
+   "mix": "learned",
+   "hold": true
+  },
+  "learned-direct": {
+   "extends": "learned",
+   "seeds": 10,
+   "projection": false
+  },
+  "learned-split-direct": {
+   "extends": "learned-direct",
+   "seeds": 10,
+   "streams": "split"
+  },
+  "learned-direct-matched": {
+   "extends": "learned-direct",
+   "seeds": 5,
+   "matched": true
+  },
+  "fixed-at": {
+   "extends": "learned-direct",
+   "seeds": 5,
+   "release_from": "learned-direct"
+  },
+  "fixed-early": {
+   "extends": "learned-direct",
+   "seeds": 5,
+   "release_fraction": 0.015
+  },
+  "fixed-late": {
+   "extends": "learned-direct",
+   "seeds": 5,
+   "release_fraction": 0.2
+  },
+  "no-hold": {
+   "extends": "learned-direct",
+   "seeds": 5,
+   "hold": false
+  },
+  "blind": {
+   "extends": "learned-direct",
+   "seeds": 5,
+   "features": ""
+  },
+  "shuffled": {
+   "extends": "learned-direct",
+   "seeds": 5,
+   "shuffled": true
+  },
+  "spelling-only": {
+   "extends": "learned-direct",
+   "seeds": 5,
+   "features": "H"
+  },
+  "sound-only": {
+   "extends": "learned-direct",
+   "seeds": 5,
+   "features": "G"
+  },
+  "table-avg": {
+   "extends": "triple-direct",
+   "seeds": 5,
+   "mix": "table",
+   "table": "avg"
+  },
+  "table-avg-switched": {
+   "extends": "table-avg",
+   "seeds": 5,
+   "hold": true
+  },
+  "table-rule": {
+   "extends": "table-avg",
+   "seeds": 5,
+   "table": "rule"
+  },
+  "table-rule-switched": {
+   "extends": "table-rule",
+   "seeds": 5,
+   "hold": true
+  },
+  "table-global": {
+   "extends": "table-avg",
+   "seeds": 5,
+   "table": "global"
+  },
+  "baseline-small": {
+   "extends": "baseline",
+   "seeds": 5,
+   "receiver_scale": 1
+  },
+  "baseline-large": {
+   "extends": "baseline",
+   "seeds": 5,
+   "receiver_scale": 4
+  },
+  "learned-direct-small": {
+   "extends": "learned-direct",
+   "seeds": 5,
+   "receiver_scale": 1
+  },
+  "learned-direct-large": {
+   "extends": "learned-direct",
+   "seeds": 5,
+   "receiver_scale": 4
+  }
+ },
+ "checkpoints": {
+  "fractions": [
+   0.1,
+   0.25,
+   0.5
+  ],
+  "arms": [
+   "baseline",
+   "learned-direct"
+  ]
+ },
+ "gauge": {
+  "interval": 50,
+  "batches": 24
+ },
+ "evaluation": {
+  "probe_steps": 100,
+  "probe_decay": 0.0001,
+  "neighbours": 10
+ },
+ "analysis": {
+  "late": 0.5
+ }
+}

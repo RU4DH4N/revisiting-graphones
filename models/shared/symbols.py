@@ -1,0 +1,2 @@
+N_BYTES = 256
+BLANK = N_BYTES

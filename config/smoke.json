@@ -1,0 +1,105 @@
+{
+ "extends": "en-fr.json",
+ "trunk_parameters": 200000,
+ "trunk_width": 96,
+ "context_words": 16,
+ "batch_windows": 8,
+ "passes": 0.3,
+ "learning_rate": 0.001,
+ "log_interval": 20,
+ "data": {
+  "bytes": {
+   "train": 400000,
+   "selection": 60000,
+   "reporting": 60000
+  }
+ },
+ "graphones": {
+  "sample": 2000,
+  "rounds": 2
+ },
+ "arms": {
+  "baseline": {
+   "seeds": 2
+  },
+  "baseline-mlp": {
+   "seeds": 2
+  },
+  "split-direct": {
+   "seeds": 2
+  },
+  "triple": {
+   "seeds": 2
+  },
+  "triple-direct": {
+   "seeds": 2
+  },
+  "learned": {
+   "seeds": 2
+  },
+  "learned-direct": {
+   "seeds": 2
+  },
+  "learned-split-direct": {
+   "seeds": 2
+  },
+  "learned-direct-matched": {
+   "seeds": 2
+  },
+  "fixed-at": {
+   "seeds": 2
+  },
+  "fixed-early": {
+   "seeds": 2
+  },
+  "fixed-late": {
+   "seeds": 2
+  },
+  "no-hold": {
+   "seeds": 2
+  },
+  "blind": {
+   "seeds": 2
+  },
+  "shuffled": {
+   "seeds": 2
+  },
+  "spelling-only": {
+   "seeds": 2
+  },
+  "sound-only": {
+   "seeds": 2
+  },
+  "table-avg": {
+   "seeds": 2
+  },
+  "table-avg-switched": {
+   "seeds": 2
+  },
+  "table-rule": {
+   "seeds": 2
+  },
+  "table-rule-switched": {
+   "seeds": 2
+  },
+  "table-global": {
+   "seeds": 2
+  },
+  "baseline-small": {
+   "seeds": 2
+  },
+  "baseline-large": {
+   "seeds": 2
+  },
+  "learned-direct-small": {
+   "seeds": 2
+  },
+  "learned-direct-large": {
+   "seeds": 2
+  }
+ },
+ "gauge": {
+  "interval": 20,
+  "batches": 4
+ }
+}
