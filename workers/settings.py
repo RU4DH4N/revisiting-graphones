@@ -11,7 +11,10 @@ from models.conventions import Conventions
 from models.graphone import (
     EQUAL,
     FEATURES,
+    GATED,
+    KEPT,
     LEARNED,
+    LETTERS,
     MIXES,
     SPLIT,
     STREAMS,
@@ -289,6 +292,10 @@ def check_arm(name: str, arm: Arm, trunk_width: int) -> None:
     )
     if arm.mix not in MIXES:
         raise ValueError(f"arm {name}: mix must be one of {MIXES}")
+    if arm.streams == LETTERS and arm.mix != EQUAL:
+        raise ValueError(f"arm {name}: a single stream has nothing to mix")
+    if arm.mix == KEPT and arm.streams != TRIPLE:
+        raise ValueError(f"arm {name}: keeping the letters needs three streams")
     if arm.streams == SPLIT and arm.mix == TABLE:
         raise ValueError(f"arm {name}: a table mix needs three streams")
     if (arm.table is not None) != (arm.mix == TABLE):
@@ -297,8 +304,8 @@ def check_arm(name: str, arm: Arm, trunk_width: int) -> None:
         raise ValueError(f"arm {name}: table must be one of {TABLE_NAMES}")
     if any(feature not in FEATURES for feature in arm.features):
         raise ValueError(f"arm {name}: features must be drawn from {FEATURES}")
-    if arm.mix != LEARNED and (arm.features != FEATURES or arm.shuffled):
-        raise ValueError(f"arm {name}: only a learned mix reads features")
+    if arm.mix not in GATED and (arm.features != FEATURES or arm.shuffled):
+        raise ValueError(f"arm {name}: only a gated mix reads features")
     if arm.hold and arm.mix == EQUAL:
         raise ValueError(f"arm {name}: an equal mix cannot be held")
     if arm.input_mlp and not arm.projection:

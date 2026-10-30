@@ -6,11 +6,12 @@ from orchestrator.contract import digest
 from orchestrator.graph import Graph
 
 REVISION = "revision"
+FINGERPRINT = "fingerprint"
 
 
 class Artefacts:
-    def __init__(self, graph: Graph, directory: Path) -> None:
-        self.graph, self.directory = graph, directory
+    def __init__(self, graph: Graph, directory: Path, trust: dict[str, str]) -> None:
+        self.graph, self.directory, self.trust = graph, directory, trust
 
     def path(self, key: str) -> Path:
         return self.directory / "cache" / f"{key}.json"
@@ -18,7 +19,7 @@ class Artefacts:
     def record(self, key: str, parents: dict[str, dict]) -> dict:
         node = self.graph.nodes[key]
         return {
-            "fingerprint": self.graph.fingerprints[key],
+            FINGERPRINT: self.graph.fingerprints[key],
             "outputs": {portable_path(p): file_sha256(p) for p in node.outputs()},
             "dependencies": {
                 p: digest(parents[p]["outputs"]) for p in self.graph.parents[key]
@@ -61,8 +62,10 @@ class Artefacts:
         except (OSError, ValueError):
             found = None
         fingerprint = self.graph.fingerprints[key]
-        current = found is not None and found.get("fingerprint") == fingerprint
-        return found if current else None
+        recorded = None if found is None else found.get(FINGERPRINT, "")
+        if recorded is None or fingerprint not in (recorded, self.trust.get(recorded)):
+            return None
+        return {**found, FINGERPRINT: fingerprint}
 
     def verified(self, key: str) -> dict | None:
         saved = self.saved(key)

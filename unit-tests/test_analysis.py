@@ -7,7 +7,6 @@ from conftest import arm, raw_config
 
 from models.graphone import EQUAL, SPLIT
 from workers.analysis import (
-    LANGUAGE_LATE,
     ArmResults,
     Summary,
     contrasts,
@@ -15,7 +14,7 @@ from workers.analysis import (
     window,
 )
 from workers.layout import Layout
-from workers.records import SCORES, GaugePoint
+from workers.records import LANGUAGE_LATE, SCORES, GaugePoint
 from workers.settings import parse
 
 GAUGE = [GaugePoint(step, step / 100, 0.0) for step in range(10, 101, 10)]
@@ -78,4 +77,4 @@ def test_contrasts_compare_arms_seed_by_seed(tmp_path: Path) -> None:
     for measure in SCORES:
         sign = -1.0 if measure == "bits_per_byte" else 1.0
         assert found[measure].test.mean == pytest.approx(-0.1 * sign)
-    assert found[LANGUAGE_LATE].test.mean == pytest.approx(0.2)
+    assert found[LANGUAGE_LATE].test.mean == pytest.approx(-0.2)

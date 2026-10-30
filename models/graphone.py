@@ -15,14 +15,17 @@ TABLE_NAMES = (AVERAGE, RULE, GLOBAL)
 
 # H = H(sound | letter), G = H(letter | sound), S = silent letter
 FEATURES = "HGS"
+LETTERS = "letters"
 SPLIT = "split"
 TRIPLE = "triple"
 MIXED_STREAMS = 3
-STREAMS = {SPLIT: 2, TRIPLE: MIXED_STREAMS}
+STREAMS = {LETTERS: 1, SPLIT: 2, TRIPLE: MIXED_STREAMS}
 EQUAL = "equal"
 LEARNED = "learned"
+KEPT = "kept"
 TABLE = "table"
-MIXES = (EQUAL, LEARNED, TABLE)
+MIXES = (EQUAL, LEARNED, KEPT, TABLE)
+GATED = (LEARNED, KEPT)
 # units with no sound have empty sound and joint streams, so the letter takes all
 LETTERS_ONLY = (1.0, 0.0, 0.0)
 POSITIONS = "positions"
@@ -106,7 +109,7 @@ class GraphoneCode(nn.Module):
         )
         if spec.streams == TRIPLE:
             self.register_buffer("joint", stream(tables.joint, has), persistent=False)
-        if spec.mix == LEARNED:
+        if spec.mix in GATED:
             self.build_gate(spec, tables)
         if spec.mix == TABLE:
             if tables.table is None:
@@ -133,7 +136,8 @@ class GraphoneCode(nn.Module):
         state = torch.get_rng_state()
         torch.manual_seed(spec.gate_seed)
         self.gate_hidden = nn.Linear(len(FEATURES), spec.gate_hidden)
-        self.gate_out = nn.Linear(spec.gate_hidden, self.mixed)
+        learned = self.mixed if spec.mix == LEARNED else self.mixed - 1
+        self.gate_out = nn.Linear(spec.gate_hidden, learned)
         nn.init.zeros_(self.gate_out.weight)
         nn.init.ones_(self.gate_out.bias)
         torch.set_rng_state(state)
@@ -142,9 +146,13 @@ class GraphoneCode(nn.Module):
         self.released.fill_(True)
 
     def directions(self) -> Tensor:
-        if self.spec.mix == LEARNED:
+        if self.spec.mix in GATED:
             raw = self.gate_out(nn.functional.gelu(self.gate_hidden(self.features)))
-            return normalise(raw, DIRECTION_EPS)
+            unit = normalise(raw, DIRECTION_EPS)
+            if self.spec.mix == LEARNED:
+                return unit
+            kept = torch.full((len(raw), 1), self.mixed**-0.5, device=raw.device)
+            return torch.cat([kept, unit * (1 - 1 / self.mixed) ** 0.5], dim=-1)
         equal = torch.full(
             (len(self.has), self.mixed), self.mixed**-0.5, device=self.has.device
         )
@@ -160,7 +168,9 @@ class GraphoneCode(nn.Module):
         )
 
     def forward(self, units: Tensor) -> Tensor:
-        streams = [self.letters[units], self.sounds[units]]
+        streams = [self.letters[units]]
+        if self.spec.streams != LETTERS:
+            streams.append(self.sounds[units])
         if self.spec.streams == TRIPLE:
             streams.append(self.joint[units])
         if self.spec.mix != EQUAL:

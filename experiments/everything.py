@@ -1,8 +1,10 @@
 from pathlib import Path
 
 from experiments.fixed_tables import FixedTables
+from experiments.graphones_vs_letters import GraphonesVsLetters
 from experiments.headline import Headline
 from experiments.learned_mix import LearnedMix
+from experiments.letter_cut import LetterCut
 from experiments.mix_ablation import MixAblation
 from experiments.projection_absorbs import ProjectionAbsorbs
 from experiments.receiver_size import ReceiverSize
@@ -15,6 +17,7 @@ from pipeline.tasks import Task
 
 EXPERIMENTS = (
     Headline,
+    GraphonesVsLetters,
     LearnedMix,
     ProjectionAbsorbs,
     MixAblation,
@@ -22,6 +25,7 @@ EXPERIMENTS = (
     ReceiverSize,
     ReleaseTiming,
     Trajectory,
+    LetterCut,
 )
 
 
@@ -55,6 +59,7 @@ class Everything(Task):
 BY_FILE: dict[str, type[Task]] = {
     "everything": Everything,
     "headline": Headline,
+    "graphones_vs_letters": GraphonesVsLetters,
     "projection_absorbs": ProjectionAbsorbs,
     "learned_mix": LearnedMix,
     "mix_ablation": MixAblation,
@@ -62,4 +67,5 @@ BY_FILE: dict[str, type[Task]] = {
     "receiver_size": ReceiverSize,
     "release_timing": ReleaseTiming,
     "trajectory": Trajectory,
+    "letter_cut": LetterCut,
 }

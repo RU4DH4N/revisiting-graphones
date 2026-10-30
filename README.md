@@ -47,14 +47,16 @@ its first letter. It then turns every word into letter, sound and joint units wi
 
 | Experiment | Result | Entry point |
 |---|---|---|
-| Headline | TBD | `experiments/headline.py` |
 | E1. | TBD | `experiments/projection_absorbs.py` |
 | E2. | TBD | `experiments/learned_mix.py` |
 | E3. | TBD | `experiments/mix_ablation.py` |
 | E4. | TBD | `experiments/fixed_tables.py` |
 | E5. | TBD | `experiments/receiver_size.py` |
-| Release timing | TBD | `experiments/release_timing.py` |
-| Trajectory | TBD | `experiments/trajectory.py` |
+| E6. | TBD | `experiments/headline.py` |
+| E7. | TBD | `experiments/graphones_vs_letters.py` |
+| E8. | TBD | `experiments/release_timing.py` |
+| E9. | TBD | `experiments/trajectory.py` |
+| E10. | TBD | `experiments/letter_cut.py` |
 
 Every experiment compares its arms on bits per byte, MultiBLiMP accuracy, a linear part-of-speech probe (accuracy,
 selectivity, zero-shot transfer), FLORES retrieval (P@1, CSLS), linear CKA and late language share, each on the

@@ -76,6 +76,8 @@ def test_an_arm_without_a_projection_takes_its_width_from_the_trunk() -> None:
         ({"a": {**BASE, "extends": "b"}, "b": {"extends": "a"}}, "extends itself"),
         ({"a": {"extends": "missing"}}, "not an arm"),
         ({"a": {**BASE, "projection": False}}, "from trunk_width"),
+        ({"a": {**BASE, "streams": "letters", "mix": "learned"}}, "nothing to mix"),
+        ({"a": {**BASE, "mix": "kept"}}, "keeping the letters needs three streams"),
     ],
 )
 def test_broken_arm_definitions_are_refused(arms: dict, message: str) -> None:
@@ -92,7 +94,7 @@ def test_a_projection_must_change_the_width() -> None:
 @pytest.mark.parametrize("changes", [{"features": "H"}, {"shuffled": True}])
 def test_only_a_learned_mix_reads_features(changes: dict) -> None:
     settings = settings_with({"full": {**BASE, **changes}})
-    with pytest.raises(ValueError, match="only a learned mix reads features"):
+    with pytest.raises(ValueError, match="only a gated mix reads features"):
         parse(settings)
 
 

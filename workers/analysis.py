@@ -5,11 +5,17 @@ import numpy as np
 
 from framework.storage import read_json
 from workers.layout import Layout
-from workers.records import SCORES, GaugePoint, Metrics, read_evaluation, read_metrics
+from workers.records import (
+    LANGUAGE_LATE,
+    SCORES,
+    GaugePoint,
+    Metrics,
+    read_evaluation,
+    read_metrics,
+)
 from workers.settings import Config
 from workers.statistics import Cell, equivalence, holm, paired
 
-LANGUAGE_LATE = "language_late"
 MEASURES = (*SCORES, LANGUAGE_LATE)
 
 

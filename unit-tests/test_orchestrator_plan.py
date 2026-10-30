@@ -97,19 +97,24 @@ def test_execute_refuses_a_task_whose_inputs_are_unverified(session: Session) ->
         session.execute(evaluate["key"])
 
 
-def test_merged_plans_keep_every_task_and_name_its_pair(session: Session) -> None:
+def paired(session: Session) -> tuple[dict, dict]:
     plan = {**session.plan(), "config": "config/en-fr.json"}
     other = {
         **plan,
         "config": "config/en-ru.json",
         "tasks": [{**task, "key": f"x{task['key']}"} for task in plan["tasks"]],
     }
-    found = merged([plan, other])
+    return plan, other
+
+
+def test_merged_plans_keep_every_task_and_name_its_pair(session: Session) -> None:
+    plan, other = paired(session)
+    found = merged([plan, other], False)
     assert len(found["tasks"]) == 2 * len(plan["tasks"])
     assert found["tasks"][0]["label"] == f"en-fr/{plan['tasks'][0]['label']}"
     assert found["tasks"][-1]["label"].startswith("en-ru/")
     with pytest.raises(ValueError, match="appears in two plans"):
-        merged([plan, plan])
+        merged([plan, plan], False)
 
 
 def keys_for(
@@ -258,16 +263,26 @@ def test_the_headline_and_everything_it_needs_come_first(session: Session) -> No
 def test_merged_plans_rank_every_stage_of_one_pair_before_the_next(
     session: Session,
 ) -> None:
-    plan = {**session.plan(), "config": "config/en-fr.json"}
-    other = {
-        **plan,
-        "config": "config/en-ru.json",
-        "tasks": [{**task, "key": f"x{task['key']}"} for task in plan["tasks"]],
-    }
-    found = merged([plan, other])["tasks"]
+    plan, other = paired(session)
+    found = merged([plan, other], False)["tasks"]
     first = [task["priority"] for task in found if task["label"].startswith("en-fr/")]
     second = [task["priority"] for task in found if task["label"].startswith("en-ru/")]
     assert max(first) < min(second)
+
+
+def test_merged_by_stage_ranks_each_stage_of_every_pair_before_the_next(
+    session: Session,
+) -> None:
+    plan, other = paired(session)
+    stages = {task["key"]: task["priority"] for task in plan["tasks"]}
+    found = merged([plan, other], True)["tasks"]
+    for early in found:
+        for late in found:
+            if (
+                stages[early["key"].removeprefix("x")]
+                < stages[late["key"].removeprefix("x")]
+            ):
+                assert early["priority"] < late["priority"]
 
 
 def test_a_cuda_plan_needs_a_committed_repository(tmp_path: Path) -> None:
@@ -292,12 +307,7 @@ def test_every_task_carries_the_plans_revision(session: Session) -> None:
 
 
 def test_plans_from_different_revisions_are_not_merged(session: Session) -> None:
-    plan = {**session.plan(), "config": "config/en-fr.json"}
-    other = {
-        **plan,
-        "config": "config/en-ru.json",
-        "revision": "b" * 40,
-        "tasks": [{**task, "key": f"x{task['key']}"} for task in plan["tasks"]],
-    }
+    plan, paired_plan = paired(session)
+    other = {**paired_plan, "revision": "b" * 40}
     with pytest.raises(ValueError, match="different revisions"):
-        merged([plan, other])
+        merged([plan, other], False)

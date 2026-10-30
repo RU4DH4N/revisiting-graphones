@@ -5,9 +5,9 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import stats
 
-from workers.records import BITS_PER_BYTE
+from workers.records import BITS_PER_BYTE, LANGUAGE_LATE
 
-LOWER_IS_BETTER = (BITS_PER_BYTE,)
+LOWER_IS_BETTER = (BITS_PER_BYTE, LANGUAGE_LATE)
 CONFIDENCE = 0.95
 ALPHA = 0.05
 

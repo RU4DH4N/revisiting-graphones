@@ -6,7 +6,7 @@ from framework.storage import read_json, write_json
 from orchestrator.contract import PLAN_FORMAT
 
 
-def merged(plans: list[dict]) -> dict:
+def merged(plans: list[dict], by_stage: bool) -> dict:
     tasks = []
     seen: set[str] = set()
     span = 1 + max(task["priority"] for plan in plans for task in plan["tasks"])
@@ -19,7 +19,11 @@ def merged(plans: list[dict]) -> dict:
                 raise ValueError(f"{task['label']} appears in two plans")
             seen.add(task["key"])
             label = f"{name}/{task['label']}"
-            priority = rank * span + task["priority"]
+            priority = (
+                task["priority"] * len(plans) + rank
+                if by_stage
+                else rank * span + task["priority"]
+            )
             tasks.append({**task, "label": label, "priority": priority})
     revisions = {plan["revision"] for plan in plans}
     if len(revisions) != 1:
@@ -36,9 +40,10 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("plans", nargs="+", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--by-stage", action="store_true")
     args = parser.parse_args()
     plans = [read_json(path) for path in args.plans]
-    write_json(args.output, merged(plans))
+    write_json(args.output, merged(plans, args.by_stage))
     print(f"wrote {portable_path(args.output)}")
 
 

@@ -25,6 +25,12 @@
   "baseline-mlp": {
    "seeds": 2
   },
+  "letters-only": {
+   "seeds": 2
+  },
+  "kept-letters": {
+   "seeds": 2
+  },
   "split-direct": {
    "seeds": 2
   },

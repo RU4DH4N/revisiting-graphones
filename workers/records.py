@@ -114,6 +114,7 @@ POS_TRANSFER = "pos_transfer"
 RETRIEVAL = "retrieval"
 RETRIEVAL_CSLS = "retrieval_csls"
 CKA = "cka"
+LANGUAGE_LATE = "language_late"
 SCORES = (
     BITS_PER_BYTE,
     MINIMAL_PAIRS,

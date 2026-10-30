@@ -10,6 +10,7 @@ from orchestrator.artefacts import Artefacts
 from orchestrator.context import Context, load_context
 from orchestrator.contract import PLAN_FORMAT, digest
 from orchestrator.graph import Graph
+from orchestrator.trust import TRUST, trusted
 from pipeline.tasks import Task
 from workers.entry import CONFIG, DEVICE, OUTPUT, SPLIT
 
@@ -31,7 +32,9 @@ class Session:
         roots = tuple(discover(stem)(context) for stem in self.experiments)
         self.graph = Graph(roots)
         self.stages = self.graph.stages(roots)
-        self.artefacts = Artefacts(self.graph, context.output / ".orchestrator")
+        self.artefacts = Artefacts(
+            self.graph, context.output / ".orchestrator", trusted(TRUST)
+        )
 
     def execute_command(self, key: str) -> list[str]:
         return [

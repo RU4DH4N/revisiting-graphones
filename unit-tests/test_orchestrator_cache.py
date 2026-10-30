@@ -62,10 +62,10 @@ def toys(root: Path, needs: dict[str, tuple[str, ...]]) -> dict[str, Toy]:
     return registry
 
 
-def chain(root: Path) -> tuple[Graph, Artefacts, dict[str, Toy]]:
+def chain(root: Path, trust: dict[str, str]) -> tuple[Graph, Artefacts, dict[str, Toy]]:
     registry = toys(root, {"parent": (), "child": ("parent",)})
     graph = Graph((registry["child"],))
-    return graph, Artefacts(graph, root / "manifests"), registry
+    return graph, Artefacts(graph, root / "manifests", trust), registry
 
 
 def finish(graph: Graph, artefacts: Artefacts, key: str) -> None:
@@ -84,7 +84,7 @@ def ready(artefacts: Artefacts, registry: dict[str, Toy]) -> dict[str, bool]:
 
 
 def finished_chain(root: Path) -> tuple[Graph, Artefacts, dict[str, Toy]]:
-    graph, artefacts, registry = chain(root)
+    graph, artefacts, registry = chain(root, {})
     for key in graph.order:
         finish(graph, artefacts, key)
     return graph, artefacts, registry
@@ -115,7 +115,34 @@ def test_a_child_built_from_an_older_parent_is_not_reused(tmp_path: Path) -> Non
 def test_a_code_change_reruns_every_task_that_ran_it(tmp_path: Path) -> None:
     finished_chain(tmp_path)
     (tmp_path / "code.py").write_text("second")
-    _, artefacts, registry = chain(tmp_path)
+    _, artefacts, registry = chain(tmp_path, {})
+    assert ready(artefacts, registry) == {"parent": False, "child": False}
+
+
+def regranted(root: Path) -> tuple[Graph, dict[str, str]]:
+    old, _, _ = finished_chain(root)
+    (root / "code.py").write_text("second")
+    new, _, _ = chain(root, {})
+    return old, {old.fingerprints[key]: new.fingerprints[key] for key in old.order}
+
+
+def test_a_trusted_fingerprint_survives_a_code_change(tmp_path: Path) -> None:
+    _, trust = regranted(tmp_path)
+    _, artefacts, registry = chain(tmp_path, trust)
+    assert ready(artefacts, registry) == {"parent": True, "child": True}
+
+
+def test_trust_names_both_fingerprints(tmp_path: Path) -> None:
+    old, _ = regranted(tmp_path)
+    trust = {old.fingerprints[key]: "elsewhere" for key in old.order}
+    _, artefacts, registry = chain(tmp_path, trust)
+    assert ready(artefacts, registry) == {"parent": False, "child": False}
+
+
+def test_trust_does_not_excuse_an_edited_output(tmp_path: Path) -> None:
+    _, trust = regranted(tmp_path)
+    _, artefacts, registry = chain(tmp_path, trust)
+    registry["parent"].files[0].write_text("edited")
     assert ready(artefacts, registry) == {"parent": False, "child": False}
 
 

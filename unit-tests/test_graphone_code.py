@@ -6,7 +6,10 @@ import torch
 from models.graphone import (
     EQUAL,
     FEATURES,
+    KEPT,
     LEARNED,
+    LETTERS,
+    MIXED_STREAMS,
     SPLIT,
     TABLE,
     TRIPLE,
@@ -60,6 +63,45 @@ def fixed(*shares: float) -> np.ndarray:
 
 
 UNITS = torch.tensor([[0, 1, 3, BLANK, BLANK], [2, 4, 5, 1, BLANK]])
+
+
+def test_a_letters_only_code_reads_no_sounds() -> None:
+    spec = MixSpec(LETTERS, EQUAL, FEATURES, False, False, 64, 5, 6)
+    plain = tables(None)
+    flipped = StreamTables(
+        plain.letters,
+        -plain.sounds,
+        -plain.joint,
+        plain.has,
+        plain.features,
+        None,
+        plain.slots,
+    )
+    found = GraphoneCode(spec, plain, 11)(UNITS)
+    assert found.shape[-1] == DIMS
+    assert torch.equal(found, GraphoneCode(spec, flipped, 11)(UNITS))
+
+
+def test_a_kept_mix_starts_equal_and_never_moves_the_letters() -> None:
+    found = code(KEPT)
+    assert torch.allclose(found(UNITS), code(EQUAL)(UNITS))
+    with torch.no_grad():
+        found.gate_out.weight.normal_()
+    directions = found.directions()
+    assert torch.allclose(directions[:, 0], torch.full((ROWS,), MIXED_STREAMS**-0.5))
+    assert torch.allclose(directions.norm(dim=-1), torch.ones(ROWS))
+
+
+def test_a_kept_gate_learns_the_split_of_sound_and_joint() -> None:
+    found = code(KEPT)
+    optimiser = torch.optim.SGD(found.parameters(), lr=1.0)
+    found(UNITS)[..., DIMS:].sum().backward()
+    assert found.gate_out.weight.grad is not None
+    assert found.gate_out.weight.grad.abs().sum() > 0
+    optimiser.step()
+    moved = found.directions()
+    assert torch.allclose(moved[:, 0], torch.full((ROWS,), MIXED_STREAMS**-0.5))
+    assert not torch.allclose(moved[:, 1], moved[:, 2])
 
 
 def test_a_new_learned_mix_starts_as_the_equal_mix() -> None:

@@ -182,6 +182,16 @@
    "seeds": 10,
    "input_mlp": true
   },
+  "letters-only": {
+   "extends": "baseline",
+   "seeds": 10,
+   "streams": "letters"
+  },
+  "kept-letters": {
+   "extends": "learned-direct",
+   "seeds": 10,
+   "mix": "kept"
+  },
   "split-direct": {
    "extends": "baseline",
    "seeds": 10,

@@ -22,11 +22,11 @@ from experiments.arm_names import (
 )
 from framework.paths import portable_path
 from framework.storage import read_json
-from workers.analysis import LANGUAGE_LATE
 from workers.layout import Layout
 from workers.records import (
     BITS_PER_BYTE,
     CKA,
+    LANGUAGE_LATE,
     MINIMAL_PAIRS,
     POS_ACCURACY,
     POS_SELECTIVITY,
