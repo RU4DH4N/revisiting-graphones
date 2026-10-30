@@ -1,9 +1,11 @@
 import math
 
 import numpy as np
+import pytest
 import torch
 
 from models.graphone import (
+    BYTES,
     EQUAL,
     FEATURES,
     KEPT,
@@ -65,8 +67,9 @@ def fixed(*shares: float) -> np.ndarray:
 UNITS = torch.tensor([[0, 1, 3, BLANK, BLANK], [2, 4, 5, 1, BLANK]])
 
 
-def test_a_letters_only_code_reads_no_sounds() -> None:
-    spec = MixSpec(LETTERS, EQUAL, FEATURES, False, False, 64, 5, 6)
+@pytest.mark.parametrize("streams", [LETTERS, BYTES])
+def test_a_single_stream_code_reads_no_sounds(streams: str) -> None:
+    spec = MixSpec(streams, EQUAL, FEATURES, False, False, 64, 5, 6)
     plain = tables(None)
     flipped = StreamTables(
         plain.letters,

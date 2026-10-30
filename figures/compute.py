@@ -14,8 +14,8 @@ from figures.tables import TABLES, macro
 from framework.seeds import seed_for
 from framework.storage import read_json
 from models.bilingual import IGNORE, GraphoneModel
-from workers.arms import assemble
-from workers.batches import Expander, WindowSampler, WordBatch
+from workers.arms import assemble, expander_for
+from workers.batches import WindowSampler, WordBatch
 from workers.design import Sizing, read_sizing
 
 NEEDS = (Headline.name,)
@@ -33,10 +33,11 @@ class Cost:
     gate_step: float
 
 
-def counted_batch(inputs: Inputs, tables: Tables) -> WordBatch:
-    corpus = BilingualCorpus(inputs.layout.corpus)
+def counted_batch(
+    inputs: Inputs, corpus: BilingualCorpus, tables: Tables, arm: str
+) -> WordBatch:
     config = inputs.config
-    expander = Expander(corpus, tables.codes, tables.lengths, CPU)
+    expander = expander_for(corpus, tables, config.arms[arm], CPU)
     spoken = corpus.language_ids(config.data.languages)
     sampler = WindowSampler(
         corpus.parts[TRAIN],
@@ -117,8 +118,11 @@ def macros(found: Cost) -> list[str]:
 def compute(inputs: Inputs) -> list[Path]:
     sizing = read_sizing(read_json(inputs.layout.design))
     tables = read_tables(inputs.layout.graphones)
-    batch = counted_batch(inputs, tables)
-    found = [cost(inputs, sizing, tables, batch, arm) for arm in inputs.config.arms]
+    corpus = BilingualCorpus(inputs.layout.corpus)
+    found = [
+        cost(inputs, sizing, tables, counted_batch(inputs, corpus, tables, arm), arm)
+        for arm in inputs.config.arms
+    ]
     folder = inputs.folder / TABLES
     lines = [line for item in found for line in macros(item)]
     return [

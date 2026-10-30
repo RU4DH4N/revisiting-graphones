@@ -14,7 +14,6 @@ from models.graphone import (
     GATED,
     KEPT,
     LEARNED,
-    LETTERS,
     MIXES,
     SPLIT,
     STREAMS,
@@ -292,7 +291,7 @@ def check_arm(name: str, arm: Arm, trunk_width: int) -> None:
     )
     if arm.mix not in MIXES:
         raise ValueError(f"arm {name}: mix must be one of {MIXES}")
-    if arm.streams == LETTERS and arm.mix != EQUAL:
+    if STREAMS[arm.streams] == 1 and arm.mix != EQUAL:
         raise ValueError(f"arm {name}: a single stream has nothing to mix")
     if arm.mix == KEPT and arm.streams != TRIPLE:
         raise ValueError(f"arm {name}: keeping the letters needs three streams")

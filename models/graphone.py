@@ -16,10 +16,11 @@ TABLE_NAMES = (AVERAGE, RULE, GLOBAL)
 # H = H(sound | letter), G = H(letter | sound), S = silent letter
 FEATURES = "HGS"
 LETTERS = "letters"
+BYTES = "bytes"
 SPLIT = "split"
 TRIPLE = "triple"
 MIXED_STREAMS = 3
-STREAMS = {LETTERS: 1, SPLIT: 2, TRIPLE: MIXED_STREAMS}
+STREAMS = {LETTERS: 1, BYTES: 1, SPLIT: 2, TRIPLE: MIXED_STREAMS}
 EQUAL = "equal"
 LEARNED = "learned"
 KEPT = "kept"
@@ -169,7 +170,7 @@ class GraphoneCode(nn.Module):
 
     def forward(self, units: Tensor) -> Tensor:
         streams = [self.letters[units]]
-        if self.spec.streams != LETTERS:
+        if self.mixed > 1:
             streams.append(self.sounds[units])
         if self.spec.streams == TRIPLE:
             streams.append(self.joint[units])

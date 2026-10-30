@@ -333,7 +333,8 @@ def test_every_word_enters_the_trunk_at_the_same_length(tiny: Tiny, name: str) -
 def messages_with_table(tiny: Tiny, table: np.ndarray) -> Tensor:
     model = model_for(tiny, "triple-direct")
     streams = replace(
-        stream_tables(tiny.tables, tiny.settings.arms["triple-direct"]), table=table
+        stream_tables(tiny.settings, tiny.tables, tiny.settings.arms["triple-direct"]),
+        table=table,
     )
     spec = mix_spec(tiny.settings, tiny.settings.arms["table-avg"], 0)
     model.trunk.code = GraphoneCode(

@@ -57,6 +57,7 @@ its first letter. It then turns every word into letter, sound and joint units wi
 | E8. | TBD | `experiments/release_timing.py` |
 | E9. | TBD | `experiments/trajectory.py` |
 | E10. | TBD | `experiments/letter_cut.py` |
+| E11. | TBD | `experiments/graphones_vs_bytes.py` |
 
 Every experiment compares its arms on bits per byte, MultiBLiMP accuracy, a linear part-of-speech probe (accuracy,
 selectivity, zero-shot transfer), FLORES retrieval (P@1, CSLS), linear CKA and late language share, each on the

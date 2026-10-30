@@ -7,8 +7,7 @@ from data.bilingual import BilingualCorpus
 from data.graphones import read_tables
 from framework.seeds import seed_for
 from framework.storage import write_json
-from workers.arms import load_model
-from workers.batches import Expander
+from workers.arms import expander_for, load_model
 from workers.benchmarks import Measures, benchmark_scores, evaluation_record
 from workers.entry import SeedInvocation, seed_invocation
 from workers.evaluate import Scorer, Scores
@@ -27,7 +26,7 @@ def scorer_for(task: SeedInvocation, corpus: BilingualCorpus) -> Scorer:
     )
     return Scorer(
         model.to(run.device),
-        Expander(corpus, tables.codes, tables.lengths, run.device),
+        expander_for(corpus, tables, run.config.arms[task.arm], run.device),
         run.config.context_words,
         run.device,
         run.config.precision,

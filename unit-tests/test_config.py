@@ -77,6 +77,7 @@ def test_an_arm_without_a_projection_takes_its_width_from_the_trunk() -> None:
         ({"a": {"extends": "missing"}}, "not an arm"),
         ({"a": {**BASE, "projection": False}}, "from trunk_width"),
         ({"a": {**BASE, "streams": "letters", "mix": "learned"}}, "nothing to mix"),
+        ({"a": {**BASE, "streams": "bytes", "mix": "learned"}}, "nothing to mix"),
         ({"a": {**BASE, "mix": "kept"}}, "keeping the letters needs three streams"),
     ],
 )

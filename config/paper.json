@@ -187,6 +187,11 @@
    "seeds": 10,
    "streams": "letters"
   },
+  "bytes-only": {
+   "extends": "baseline",
+   "seeds": 10,
+   "streams": "bytes"
+  },
   "kept-letters": {
    "extends": "learned-direct",
    "seeds": 10,

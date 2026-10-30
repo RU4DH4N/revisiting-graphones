@@ -1,10 +1,14 @@
+from dataclasses import replace
+
 import numpy as np
 import pytest
 import torch
-from conftest import Tiny
+from conftest import Tiny, model_with, with_arm
 
 from data.bilingual import Encoded
 from models.bilingual import IGNORE, PAD, START, STOP
+from models.graphone import BYTES, SPLIT
+from workers.arms import expander_for
 from workers.batches import Expander, WindowSampler, evaluation_rows
 
 
@@ -27,19 +31,40 @@ def test_expanded_targets_spell_each_word_then_stop(tiny: Tiny) -> None:
         assert batch.inputs[index, 1 : length + 1].tolist() == expected[:-1]
 
 
-def test_the_context_holds_each_words_graphones_in_its_own_language(tiny: Tiny) -> None:
+@pytest.mark.parametrize("streams", [SPLIT, BYTES])
+def test_the_context_holds_each_words_units_in_its_own_language(
+    tiny: Tiny, streams: str
+) -> None:
+    arm = replace(tiny.settings.arms["baseline"], streams=streams)
     rows = WindowSampler(tiny.corpus.parts["train"], [0, 1], 6, 8, 1).draw()
-    context = expander(tiny, torch.device("cpu"))(rows).context
-    codes, lengths = tiny.tables.codes, tiny.tables.lengths
+    context = expander_for(tiny.corpus, tiny.tables, arm, torch.device("cpu"))(
+        rows
+    ).context
     for window in range(len(rows.words)):
         language = int(rows.languages[window])
         for event in range(context.shape[1]):
             word = int(rows.words[window, event])
-            size = int(lengths[language, word])
-            assert context[window, event, :size].tolist() == list(
-                codes[language, word, :size]
-            )
+            if streams == BYTES:
+                size = int(tiny.corpus.lengths[word])
+                expected = list(tiny.corpus.table[word, :size])
+            else:
+                size = int(tiny.tables.lengths[language, word])
+                expected = list(tiny.tables.codes[language, word, :size])
+            assert context[window, event, :size].tolist() == expected
             assert (context[window, event, size:] == PAD).all()
+
+
+def test_a_bytes_model_scores_a_batch_of_byte_units(tiny: Tiny) -> None:
+    settings = with_arm(tiny.settings, "baseline", streams=BYTES)
+    model = model_with(tiny, settings, "baseline")
+    rows = WindowSampler(tiny.corpus.parts["train"], [0, 1], 6, 4, 2).draw()
+    found = expander_for(
+        tiny.corpus, tiny.tables, settings.arms["baseline"], torch.device("cpu")
+    )
+    batch = found(rows)
+    with torch.no_grad():
+        nll = model.word_nll(batch.inputs, batch.targets, model.messages(batch.context))
+    assert torch.isfinite(nll).all() and nll.sum() > 0
 
 
 def test_evaluation_scores_every_word_but_the_first_exactly_once(tiny: Tiny) -> None:

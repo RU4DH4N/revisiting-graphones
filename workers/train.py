@@ -23,7 +23,7 @@ from framework.runtime import (
 from framework.seeds import seed_for
 from models.bilingual import GraphoneModel
 from models.graphone import EQUAL
-from workers.arms import assemble
+from workers.arms import assemble, expander_for
 from workers.batches import (
     Expander,
     Rows,
@@ -533,7 +533,7 @@ def prepared(
         [assemble(config, sizing, tables, name, r).to(device) for r in replicates]
     )
     compile_for(stack, device)
-    expander = Expander(corpus, tables.codes, tables.lengths, device)
+    expander = expander_for(corpus, tables, config.arms[name], device)
     spoken = corpus.language_ids(languages)
     lessons = seed_samplers(config, corpus, spoken, replicates, "lesson")
     gauge = LanguageGauge(

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from experiments.fixed_tables import FixedTables
+from experiments.graphones_vs_bytes import GraphonesVsBytes
 from experiments.graphones_vs_letters import GraphonesVsLetters
 from experiments.headline import Headline
 from experiments.learned_mix import LearnedMix
@@ -26,6 +27,7 @@ EXPERIMENTS = (
     ReleaseTiming,
     Trajectory,
     LetterCut,
+    GraphonesVsBytes,
 )
 
 
@@ -68,4 +70,5 @@ BY_FILE: dict[str, type[Task]] = {
     "release_timing": ReleaseTiming,
     "trajectory": Trajectory,
     "letter_cut": LetterCut,
+    "graphones_vs_bytes": GraphonesVsBytes,
 }

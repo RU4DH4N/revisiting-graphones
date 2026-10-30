@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 from conftest import Tiny
 
+from data.bilingual import BilingualCorpus
 from data.graphones import read_tables
 from figures.ambiguity import BINS, ambiguity_bins, binned
 from figures.common import Inputs, smoothed
@@ -74,8 +75,13 @@ def test_the_compute_table_counts_every_arm_and_only_gated_arms_pay_for_a_gate(
     settings = parse({**tiny.raw, "arms": arms})
     inputs = Inputs(settings, tiny.root / "config.json", Layout(tmp_path), "selection")
     tables = read_tables(tmp_path / "graphones")
-    batch = counted_batch(inputs, tables)
-    found = {arm: cost(inputs, tiny.sizing, tables, batch, arm) for arm in arms}
+    corpus = BilingualCorpus(tmp_path / "corpus")
+    found = {
+        arm: cost(
+            inputs, tiny.sizing, tables, counted_batch(inputs, corpus, tables, arm), arm
+        )
+        for arm in arms
+    }
     assert set(found) == {"baseline", "learned-direct"}
     for item in found.values():
         assert item.train_step > item.forward_word > item.input_word > 0

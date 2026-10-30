@@ -28,6 +28,9 @@
   "letters-only": {
    "seeds": 2
   },
+  "bytes-only": {
+   "seeds": 2
+  },
   "kept-letters": {
    "seeds": 2
   },
