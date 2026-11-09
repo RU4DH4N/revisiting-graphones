@@ -14,7 +14,7 @@ Supplementary work to [Self-Weighting Graphones](#).
 | `orchestrator/` | Dependency graph, caching, plan export |
 | `framework/` | Checkpoint, runtime, seed, git revision and source-fingerprint utilities |
 | `figures/` | Paper figures, LaTeX table bodies and `numbers.tex`, drawn from finished results |
-| `config/` | `paper.json` holds the shared settings; each language pair and `smoke.json` extend it |
+| `config/` | `paper.json` holds the shared settings; each language pair, `en.json` (English alone) and `smoke.json` extend it |
 | `unit-tests/` | `uv run pytest` |
 
 ## Setup
@@ -58,10 +58,14 @@ its first letter. It then turns every word into letter, sound and joint units wi
 | E9. | TBD | `experiments/trajectory.py` |
 | E10. | TBD | `experiments/letter_cut.py` |
 | E11. | TBD | `experiments/graphones_vs_bytes.py` |
+| E12. | TBD | `experiments/rotation_matches_projection.py` |
+| E13. | TBD | `experiments/rotation_gain.py` |
+| E14. | TBD | `experiments/one_language.py` |
 
 Every experiment compares its arms on bits per byte, MultiBLiMP accuracy, a linear part-of-speech probe (accuracy,
 selectivity, zero-shot transfer), FLORES retrieval (P@1, CSLS), linear CKA and late language share, each on the
-split's half of the benchmark. `experiments/everything.py` runs all experiments.
+split's half of the benchmark. `experiments/everything.py` runs all experiments on a language pair. E14 runs on
+English alone (`config/en.json`), so it has no retrieval, transfer, CKA or language share.
 
 ## Running an experiment
 

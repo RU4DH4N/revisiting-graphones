@@ -45,26 +45,63 @@ def input_mlp(in_dims: int, shape: Shape) -> nn.Sequential:
     return nn.Sequential(expand, nn.GELU(), contract)
 
 
+def factorised(projection: nn.Module, rank: int) -> nn.Sequential:
+    if not isinstance(projection, nn.Linear):
+        raise ValueError("only a linear projection can be factorised")
+    u, s, vh = torch.linalg.svd(
+        projection.weight.detach().double(), full_matrices=False
+    )
+    with torch.random.fork_rng():
+        first = nn.Linear(projection.in_features, rank, bias=False)
+        second = nn.Linear(rank, projection.out_features, bias=False)
+    kept = s[:rank] * (s.square().sum() / s[:rank].square().sum()).sqrt()
+    with torch.no_grad():
+        first.weight.copy_(kept[:, None].sqrt() * vh[:rank])
+        second.weight.copy_(u[:, :rank] * kept.sqrt())
+    return nn.Sequential(first, second)
+
+
 class WordTrunk(nn.Module):
     code: GraphoneCode
 
     def __init__(
-        self, shape: Shape, code: GraphoneCode, matched: bool, mlp: bool
+        self,
+        shape: Shape,
+        code: GraphoneCode,
+        matched: bool,
+        mlp: bool,
+        rank: int | None,
     ) -> None:
         super().__init__()
         self.code = code
         self.trunk = Trunk(shape, code.dims, shape.message_dims)
         if mlp:
             self.trunk.in_proj = input_mlp(code.dims, shape)
+        if rank is not None:
+            self.trunk.in_proj = factorised(self.trunk.in_proj, rank)
         self.norm = nn.RMSNorm(shape.message_dims, eps=shape.norm_eps)
         self.eps = shape.norm_eps
         self.scale = (
             shape.initialiser_range * math.sqrt(shape.d_model) if matched else 1.0
         )
 
+    def inputs(self, words: Tensor) -> Tensor:
+        return normalise(words, eps=self.eps) * self.scale
+
+    def encoded(self, words: Tensor) -> Tensor:
+        return self.norm(self.trunk(self.inputs(words)))
+
     def forward(self, units: Tensor) -> Tensor:
-        codes = normalise(self.code(units), eps=self.eps) * self.scale
-        return self.norm(self.trunk(codes))
+        return self.encoded(self.code(units))
+
+
+class WordEncoder(nn.Module):
+    def __init__(self, trunk: WordTrunk) -> None:
+        super().__init__()
+        self.owner = trunk
+
+    def forward(self, words: Tensor) -> Tensor:
+        return self.owner.encoded(words)
 
 
 class WordReceiver(nn.Module):

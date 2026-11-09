@@ -8,8 +8,9 @@ from framework.paths import ROOT, portable_path
 from orchestrator.cli import Session
 from orchestrator.context import load_context
 from orchestrator.merge import merged
+from pipeline.tasks import Train
 from workers.layout import Layout
-from workers.settings import load_config
+from workers.settings import UNSET_LATER, load_config
 
 REVISION = "a" * 40
 
@@ -311,3 +312,27 @@ def test_plans_from_different_revisions_are_not_merged(session: Session) -> None
     other = {**paired_plan, "revision": "b" * 40}
     with pytest.raises(ValueError, match="different revisions"):
         merged([plan, other], False)
+
+
+def test_fields_added_later_stay_out_of_a_task_key_until_they_are_set() -> None:
+    context = load_context(
+        ROOT / "config" / "smoke.json",
+        ROOT / "artefacts" / "smoke",
+        "selection",
+        "cuda",
+    )
+    plain = Train(context, "learned-direct").task_parameters()["spec"]
+    rotated = Train(context, "rotated-direct").task_parameters()["spec"]
+    ranked = Train(context, "triple-rank-matched").task_parameters()["spec"]
+    assert not set(UNSET_LATER) & set(plain)
+    assert rotated["rotation"] is True and "projection_rank" not in rotated
+    assert ranked["projection_rank"] == 21 and "rotation" not in ranked
+
+
+def test_one_language_refuses_an_arm_released_by_the_language_gauge() -> None:
+    context = load_context(
+        ROOT / "config" / "en.json", ROOT / "artefacts" / "en", "selection", "cuda"
+    )
+    assert Train(context, "triple").arm == "triple"
+    with pytest.raises(ValueError, match="needs two languages"):
+        Train(context, "learned-direct")

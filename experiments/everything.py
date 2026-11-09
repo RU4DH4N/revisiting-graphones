@@ -7,9 +7,12 @@ from experiments.headline import Headline
 from experiments.learned_mix import LearnedMix
 from experiments.letter_cut import LetterCut
 from experiments.mix_ablation import MixAblation
+from experiments.one_language import OneLanguage
 from experiments.projection_absorbs import ProjectionAbsorbs
 from experiments.receiver_size import ReceiverSize
 from experiments.release_timing import ReleaseTiming
+from experiments.rotation_gain import RotationGain
+from experiments.rotation_matches_projection import RotationMatchesProjection
 from experiments.trajectory import Trajectory
 from framework.paths import portable_path
 from framework.storage import write_json
@@ -28,7 +31,10 @@ EXPERIMENTS = (
     Trajectory,
     LetterCut,
     GraphonesVsBytes,
+    RotationMatchesProjection,
+    RotationGain,
 )
+REPORTED = (*EXPERIMENTS, OneLanguage)
 
 
 class Everything(Task):
@@ -71,4 +77,7 @@ BY_FILE: dict[str, type[Task]] = {
     "trajectory": Trajectory,
     "letter_cut": LetterCut,
     "graphones_vs_bytes": GraphonesVsBytes,
+    "rotation_matches_projection": RotationMatchesProjection,
+    "rotation_gain": RotationGain,
+    "one_language": OneLanguage,
 }

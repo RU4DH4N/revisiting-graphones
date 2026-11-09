@@ -61,9 +61,11 @@ class Artefacts:
             found = read_json(self.path(key))
         except (OSError, ValueError):
             found = None
+        if found is None:
+            return None
         fingerprint = self.graph.fingerprints[key]
-        recorded = None if found is None else found.get(FINGERPRINT, "")
-        if recorded is None or fingerprint not in (recorded, self.trust.get(recorded)):
+        recorded = found.get(FINGERPRINT, "")
+        if fingerprint not in (recorded, self.trust.get(recorded)):
             return None
         return {**found, FINGERPRINT: fingerprint}
 

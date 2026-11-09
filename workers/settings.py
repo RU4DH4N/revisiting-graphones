@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
 EXTENDS = "extends"
+UNSET_LATER = {"rotation": False, "projection_rank": None}
 CODE_DIMS = "code_dims"
 SCALARS = (int, float, str, bool)
 
@@ -91,6 +92,8 @@ class Arm:
     release_fraction: float | None
     release_from: str | None
     table: str | None
+    rotation: bool
+    projection_rank: int | None
 
     @property
     def code_width(self) -> int:
@@ -279,6 +282,21 @@ def read_config(path: Path) -> Config:
     return parse(load_config(path))
 
 
+def described(arm: Arm) -> dict:
+    return {
+        name: value
+        for name, value in asdict(arm).items()
+        if name not in UNSET_LATER or value != UNSET_LATER[name]
+    }
+
+
+def identity(config: Config) -> dict:
+    return {
+        **asdict(config),
+        "arms": {name: described(arm) for name, arm in config.arms.items()},
+    }
+
+
 def require_below_one(**values: float) -> None:
     for name, value in values.items():
         if not 0 <= value < 1:
@@ -315,11 +333,24 @@ def check_arm(name: str, arm: Arm, trunk_width: int) -> None:
         raise ValueError(
             f"arm {name}: a projection needs a code width other than trunk_width"
         )
+    if arm.rotation and arm.mix not in GATED:
+        raise ValueError(f"arm {name}: a rotation reads the gate's features")
+    if arm.rotation and arm.code_width % 2:
+        raise ValueError(f"arm {name}: a rotation turns coordinate pairs")
+    if arm.projection_rank is not None:
+        if not arm.projection or arm.input_mlp:
+            raise ValueError(f"arm {name}: only a linear projection takes a rank")
+        if not fits(arm.projection_rank, int) or not (
+            0 < arm.projection_rank < min(arm.code_width, trunk_width)
+        ):
+            raise ValueError(
+                f"arm {name}: projection_rank must be below the code and trunk widths"
+            )
 
 
 def check_data(data: DataSettings, voices: dict[str, str]) -> None:
-    if len(data.languages) != 2:
-        raise ValueError("data.languages must name exactly two languages")
+    if len(data.languages) not in (1, 2):
+        raise ValueError("data.languages must name one or two languages")
     for name, found in (
         ("data.sources", data.sources),
         ("graphones.voices", voices),

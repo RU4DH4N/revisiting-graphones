@@ -18,9 +18,8 @@ from workers import design
 from workers.arms import assemble
 from workers.records import CurvePoint, GaugePoint
 from workers.settings import Config, Release, parse
-from workers.stacked import CODE, Stack, clip_by_seed
+from workers.stacked import Stack, clip_by_seed
 from workers.train import (
-    GATE_PREFIX,
     GateAdam,
     Hold,
     Trained,
@@ -87,7 +86,10 @@ def stack_for(tiny: Tiny, name: str, seeds: int) -> Stack:
 def test_the_gate_has_its_own_optimiser_and_rate(tiny: Tiny) -> None:
     stack = stack_for(tiny, "learned-direct", 2)
     optimiser, gates = optimisers_for(stack, 0.01, 20.0, OPTIMISER, 2, CPU)
-    expected = {id(p) for n, p in stack.params.items() if n.startswith(GATE_PREFIX)}
+    code = stack.template.trunk.code
+    learned = {id(p) for p in code.parameters()}
+    names = [n for n, p in stack.template.trunk.named_parameters() if id(p) in learned]
+    expected = {id(stack.trunk[name]) for name in names}
     assert expected and {id(p) for p in gates.gates} == expected
     trained = {id(p) for group in optimiser.param_groups for p in group["params"]}
     assert not trained & expected
@@ -125,8 +127,12 @@ def test_only_per_seed_matrices_decay(tiny: Tiny) -> None:
     stack = stack_for(tiny, "learned-direct", 2)
     found = optimisers_for(stack, 0.01, 20.0, OPTIMISER, 2, CPU)
     decayed, plain = found[0].param_groups[:2]
-    names = {id(p): n for n, p in stack.params.items()}
-    template = dict(stack.template.named_parameters())
+    names = {id(p): n for n, p in stack.trunk.items()}
+    names.update({id(p): n for n, p in stack.receiver.items()})
+    template = {
+        **dict(stack.template.trunk.named_parameters()),
+        **dict(stack.template.receiver.named_parameters()),
+    }
     assert decayed["weight_decay"] > 0.0 and plain["weight_decay"] == 0.0
     assert all(template[names[id(p)]].ndim >= 2 for p in decayed["params"])
     assert all(template[names[id(p)]].ndim < 2 for p in plain["params"])
@@ -168,10 +174,9 @@ def test_releasing_one_seed_leaves_the_others_held(tiny: Tiny, tmp_path: Path) -
     stack = Stack(
         [assemble(settings, tiny.sizing, tables, "table-avg", r) for r in range(3)]
     )
-    released = CODE + "released"
-    assert stack.buffers[released].tolist() == [False, False, False]
+    assert stack.released.tolist() == [False, False, False]
     stack.release(1)
-    assert stack.buffers[released].tolist() == [False, True, False]
+    assert stack.released.tolist() == [False, True, False]
     assert stack.model(1).trunk.code.released.item()
     assert not stack.model(2).trunk.code.released.item()
 
@@ -465,3 +470,25 @@ def test_a_checkpoint_holds_the_model_of_its_step(tiny: Tiny) -> None:
     snapshot = found.gates.snapshots[list(found.gates.snapshot_steps).index(6)]
     assert np.array_equal(directions, snapshot)
     assert not np.array_equal(directions, found.gates.final)
+
+
+def test_a_stack_gives_each_seed_its_own_shuffled_features(tiny: Tiny) -> None:
+    settings = with_arm(tiny.settings, "learned-direct", shuffled=True)
+    models = [
+        assemble(settings, tiny.sizing, tiny.tables, "learned-direct", r)
+        for r in range(2)
+    ]
+    weight = torch.randn(models[0].trunk.code.gate_out.weight.shape)
+    with torch.no_grad():
+        for model in models:
+            model.trunk.code.gate_out.weight.copy_(weight)
+    stack = Stack(models)
+    features = models[0].trunk.code.features
+    assert [n for n, b in models[0].trunk.named_buffers() if b is features][0] in (
+        stack.buffers
+    )
+    context = torch.from_numpy(tiny.tables.codes[:, :6].astype(np.int64))[:, None]
+    with torch.no_grad():
+        stacked = stack.messages(stack.trunk_state(), context)
+        for k, model in enumerate(models):
+            torch.testing.assert_close(stacked[k], model.messages(context[k]))

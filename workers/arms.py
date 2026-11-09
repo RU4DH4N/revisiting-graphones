@@ -25,6 +25,8 @@ def mix_spec(config: Config, arm: Arm, replicate: int) -> MixSpec:
         gate_hidden=config.model.gate_hidden,
         gate_seed=seed_for(config.root_seed, replicate, "gate"),
         shuffle_seed=seed_for(config.root_seed, replicate, "shuffle"),
+        rotation=arm.rotation,
+        rotation_seed=seed_for(config.root_seed, replicate, "rotation"),
     )
 
 
@@ -40,6 +42,7 @@ def byte_tables(config: Config, arm: Arm, slots: int) -> StreamTables:
         joint=empty,
         has=np.zeros(N_BYTES + 1, dtype=bool),
         features=np.zeros((N_BYTES + 1, len(FEATURES)), dtype=np.float32),
+        uses=np.zeros(N_BYTES + 1, dtype=np.float64),
         table=None,
         slots=slots,
     )
@@ -74,6 +77,7 @@ def stream_tables(config: Config, tables: Tables, arm: Arm) -> StreamTables:
         joint=joint,
         has=tables.has,
         features=tables.features,
+        uses=tables.uses,
         table=None if arm.table is None else tables.table(arm.table),
         slots=tables.codes.shape[2],
     )
@@ -89,7 +93,9 @@ def assemble(
         stream_tables(config, tables, arm),
         seed_for(config.root_seed, replicate, "position-codes"),
     )
-    trunk = WordTrunk(sizing.trunk, code, arm.matched, arm.input_mlp)
+    trunk = WordTrunk(
+        sizing.trunk, code, arm.matched, arm.input_mlp, arm.projection_rank
+    )
     receiver = build_receiver(
         receiver_for(config, sizing.max_unit_bytes, arm.receiver_scale), config.model
     )

@@ -3,6 +3,7 @@ from pathlib import Path
 
 from figures.common import Inputs, label, written
 from figures.contrasts import EXPERIMENTS, measures_of
+from workers.statistics import ALPHA
 
 MISSING = "--"
 FLOOR = 0.001
@@ -20,6 +21,15 @@ def probability(value: float) -> str:
     if value < FLOOR:
         return f"<{FLOOR}"
     return f"{value:.3f}"
+
+
+def relation(value: float) -> str:
+    found = probability(value)
+    if found == MISSING:
+        return MISSING
+    if found.startswith("<"):
+        return f"< {found[1:]}"
+    return f"= {found}"
 
 
 def escaped(text: str) -> str:
@@ -68,17 +78,45 @@ def macro(*parts: str) -> str:
     return "".join(word.capitalize() for word in words if word.isalpha())
 
 
-def numbers(reports: dict[str, dict]) -> str:
+def formatted_cell(cell: dict, adjusted: float | None) -> str:
+    test = cell["test"]
+    value = number(test["mean"])
+    if adjusted is not None and adjusted < ALPHA:
+        value = f"\\mathbf{{{value}}}"
+    raw = cell["equivalence"]["p"] if "equivalence" in cell else test["p"]
+    mark = "^\\dagger" if raw < ALPHA else ""
+    return f"${value}{mark}$ ({cell['wins']})"
+
+
+def cell_macros(name: str, cell: dict, adjusted: float | None) -> list[str]:
+    test = cell["test"]
+    values = {
+        "Mean": number(test["mean"]),
+        "Low": number(test["low"]),
+        "High": number(test["high"]),
+        "P": probability(test["p"]),
+        "PIs": relation(test["p"]),
+        "SignFlip": probability(cell["sign_flip_p"]),
+        "Wins": str(cell["wins"]),
+        "Seeds": str(test["n"]),
+    }
+    if adjusted is not None:
+        values["Holm"] = probability(adjusted)
+        values["HolmIs"] = relation(adjusted)
+    values["Cell"] = formatted_cell(cell, adjusted)
+    return [
+        f"\\newcommand{{\\{name}{key}}}{{{value}}}" for key, value in values.items()
+    ]
+
+
+def numbers(prefix: str, reports: dict[str, dict]) -> str:
     lines = []
     for experiment, report in reports.items():
+        holm = report["family"]["holm"]
         for contrast, cells in report["contrasts"].items():
-            for measure in measures_of(report):
-                test = cells[measure]["test"]
-                name = macro(experiment, contrast, measure)
-                lines.append(f"\\newcommand{{\\{name}Mean}}{{{number(test['mean'])}}}")
-                lines.append(f"\\newcommand{{\\{name}Low}}{{{number(test['low'])}}}")
-                lines.append(f"\\newcommand{{\\{name}High}}{{{number(test['high'])}}}")
-                lines.append(f"\\newcommand{{\\{name}P}}{{{probability(test['p'])}}}")
+            for measure, cell in cells.items():
+                name = macro(prefix, experiment, contrast, measure)
+                lines += cell_macros(name, cell, holm.get(f"{contrast}/{measure}"))
     return "\n".join(lines) + "\n"
 
 
@@ -93,4 +131,5 @@ def tables(inputs: Inputs) -> list[Path]:
         written(folder / f"{name}.tex", body(report))
         for name, report in reports.items()
     ]
-    return [*paths, written(folder / "numbers.tex", numbers(reports))]
+    prefix = inputs.config_path.stem
+    return [*paths, written(folder / "numbers.tex", numbers(prefix, reports))]

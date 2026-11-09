@@ -1,9 +1,9 @@
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
 
 from framework.paths import ARTEFACTS, portable_path
-from workers.settings import Config, read_config
+from workers.settings import Config, identity, read_config
 
 
 @dataclass(frozen=True)
@@ -16,7 +16,7 @@ class Context:
 
     @cached_property
     def identity(self) -> dict:
-        return asdict(self.config)
+        return identity(self.config)
 
     @property
     def config_argument(self) -> str:

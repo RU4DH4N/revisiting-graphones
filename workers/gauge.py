@@ -1,3 +1,5 @@
+import math
+
 import torch
 from torch import Tensor
 
@@ -6,6 +8,8 @@ from torch import Tensor
 def variance_share(values: Tensor, labels: Tensor, classes: int) -> float:
     if len(values) == 0:
         return 0.0
+    if classes < 2:
+        return math.nan
     centred = values - values.mean(0)
     sums = torch.zeros(classes, values.shape[1], device=values.device).index_add_(
         0, labels, centred

@@ -175,7 +175,9 @@
    "hold": false,
    "release_fraction": null,
    "release_from": null,
-   "table": null
+   "table": null,
+   "rotation": false,
+   "projection_rank": null
   },
   "baseline-mlp": {
    "extends": "baseline",
@@ -318,6 +320,16 @@
    "extends": "learned-direct",
    "seeds": 5,
    "receiver_scale": 4
+  },
+  "rotated-direct": {
+   "extends": "learned-direct",
+   "seeds": 5,
+   "rotation": true
+  },
+  "triple-rank-matched": {
+   "extends": "triple",
+   "seeds": 5,
+   "projection_rank": 21
   }
  },
  "checkpoints": {

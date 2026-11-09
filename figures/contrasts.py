@@ -31,7 +31,7 @@ from figures.common import (
 )
 from pipeline.experiment import GRAMMAR, LEARNED_VS_BASELINE
 
-EXPERIMENTS = tuple(experiment.name for experiment in everything.EXPERIMENTS)
+EXPERIMENTS = tuple(experiment.name for experiment in everything.REPORTED)
 TIMING = (NO_HOLD, FIXED_EARLY, LEARNED_DIRECT, FIXED_AT, FIXED_LATE)
 RELEASE_TIMING = "release-timing"
 TRAJECTORY = "trajectory"

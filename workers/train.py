@@ -43,9 +43,7 @@ from workers.records import (
     no_gates,
 )
 from workers.settings import Config, Optimiser
-from workers.stacked import CODE, Stack, clip_by_seed
-
-GATE_PREFIX = CODE + "gate_"
+from workers.stacked import Stack, clip_by_seed
 
 
 @dataclass
@@ -156,8 +154,8 @@ def optimisers_for(
     seeds: int,
     device: torch.device,
 ) -> tuple[torch.optim.AdamW, GateAdam]:
-    named = stack.params.items()
-    rest = [p for name, p in named if not name.startswith(GATE_PREFIX)]
+    gated = {id(p) for p in stack.gates}
+    rest = [p for p in stack.parameters() if id(p) not in gated]
     optimiser = adamw(
         [p for p in rest if p.ndim > 2],
         [p for p in rest if p.ndim <= 2],
@@ -167,9 +165,8 @@ def optimisers_for(
         settings.eps,
         device,
     )
-    gates = [p for name, p in named if name.startswith(GATE_PREFIX)]
     return optimiser, GateAdam(
-        gates, seeds, gate_rate, settings.betas, settings.eps, device
+        stack.gates, seeds, gate_rate, settings.betas, settings.eps, device
     )
 
 
@@ -293,7 +290,9 @@ class LanguageGauge:
     def messages(self, stack: Stack) -> Tensor:
         with torch.no_grad(), autocast_context(self.device, self.precision):
             found = [
-                stack.messages(stack.state(), b.context).to(torch.float32, copy=True)
+                stack.messages(stack.trunk_state(), b.context).to(
+                    torch.float32, copy=True
+                )
                 for b in self.batches
             ]
         return torch.cat(found, dim=1)
@@ -306,11 +305,9 @@ class LanguageGauge:
         ]
 
 
-def losses(
-    stack: Stack, state: dict[str, Tensor], batch: WordBatch
-) -> tuple[Tensor, Tensor]:
-    messages = stack.messages(state, batch.context)
-    words = stack.word_nll(state, batch.inputs, batch.targets, messages)
+def losses(stack: Stack, batch: WordBatch) -> tuple[Tensor, Tensor]:
+    messages = stack.messages(stack.trunk_state(), batch.context)
+    words = stack.word_nll(stack.receiver, batch.inputs, batch.targets, messages)
     words = words * batch.scored.float()
     return words.sum(1) / batch.spelled.sum(1).clamp_min(1), words
 
@@ -326,9 +323,9 @@ def step(
     device: torch.device,
 ) -> tuple[Tensor, Tensor]:
     with autocast_context(device, precision):
-        loss, words = losses(stack, stack.state(), batch)
+        loss, words = losses(stack, batch)
     loss.sum().backward()
-    clip_by_seed([p.grad for p in stack.params.values() if p.grad is not None], clip)
+    clip_by_seed([p.grad for p in stack.parameters() if p.grad is not None], clip)
     optimiser.step()
     optimiser.zero_grad(set_to_none=True)
     gates.step(learning)
@@ -341,9 +338,9 @@ def learning_mask(holds: list[Hold], device: torch.device) -> Tensor:
 
 def compile_for(stack: Stack, device: torch.device) -> None:
     if on_cuda(device):
-        for value in stack.state().values():
+        for value in (*stack.trunk_state().values(), *stack.receiver.values()):
             torch._dynamo.mark_static_address(value)
-        stack.messages = torch.compile(stack.messages, mode="reduce-overhead")
+        stack.encoded = torch.compile(stack.encoded, mode="reduce-overhead")
         stack.word_nll = torch.compile(stack.word_nll, mode="reduce-overhead")
 
 

@@ -116,6 +116,8 @@ def test_every_arm_has_the_same_trunk_and_only_its_input_layer_adds_to_it(
     hidden = round(shape.mlp_ratio * shape.d_model)
     for arm in settings.arms.values():
         linear = arm.code_width * shape.d_model if arm.projection else 0
+        if arm.projection_rank is not None:
+            linear = arm.projection_rank * (arm.code_width + shape.d_model)
         mlp = arm.code_width * hidden + hidden * shape.d_model
         extra = mlp if arm.input_mlp else linear
         assert estimates.trunk_parameters(settings, arm) == body + extra

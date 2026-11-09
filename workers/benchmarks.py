@@ -196,7 +196,8 @@ def part_of_speech(
         probe_scores(train, test, source, languages, measures) for source in languages
     ]
     accuracy = float(np.mean([scores.within for scores in found]))
-    across = float(np.mean([value for scores in found for value in scores.across]))
+    shared = [value for scores in found for value in scores.across]
+    across = float(np.mean(shared)) if shared else math.nan
     return PartOfSpeech(
         pos_accuracy=accuracy,
         pos_selectivity=accuracy - float(np.mean([scores.control for scores in found])),
@@ -253,23 +254,36 @@ def benchmark_scores(
     measures: Measures,
 ) -> BenchmarkScores:
     pairs = scorer.score(corpus.parts[BLIMP], languages)
+    parts = (UD_DEV, UD_TEST, FLORES) if len(languages) > 1 else (UD_DEV, UD_TEST)
     documents = {
         part: np.flatnonzero(np.isin(corpus.parts[part].languages, languages))
-        for part in (UD_DEV, UD_TEST, FLORES)
+        for part in parts
     }
     documents[UD_TEST] = documents[UD_TEST][in_half(UD_TEST, documents[UD_TEST], split)]
     messages = {
         part: scorer.represent(corpus.parts[part], chosen)
         for part, chosen in documents.items()
     }
-    count = len(documents[FLORES]) // len(languages)
-    sentences = np.arange(count)
-    chosen = sentences[in_half(FLORES, sentences, split)]
     return BenchmarkScores(
         minimal_pairs=minimal_pair_accuracy(pairs, corpus.parts[BLIMP], split),
         part_of_speech=part_of_speech(corpus, messages, documents, languages, measures),
-        parallel=parallel(messages[FLORES], count, chosen, measures.neighbours),
+        parallel=translations(messages, documents, languages, split, measures),
     )
+
+
+def translations(
+    messages: dict[str, list[np.ndarray]],
+    documents: dict[str, np.ndarray],
+    languages: list[int],
+    split: str,
+    measures: Measures,
+) -> Parallel:
+    if FLORES not in messages:
+        return Parallel(retrieval=math.nan, retrieval_csls=math.nan, cka=math.nan)
+    count = len(documents[FLORES]) // len(languages)
+    sentences = np.arange(count)
+    chosen = sentences[in_half(FLORES, sentences, split)]
+    return parallel(messages[FLORES], count, chosen, measures.neighbours)
 
 
 def evaluation_record(

@@ -10,9 +10,10 @@ from workers.analysis import (
     contrasts,
     family,
 )
-from workers.records import MINIMAL_PAIRS, POS_SELECTIVITY
+from workers.records import BITS_PER_BYTE, MINIMAL_PAIRS, POS_SELECTIVITY
 
 GRAMMAR = (MINIMAL_PAIRS, POS_SELECTIVITY)
+PREDICTION_AND_GRAMMAR = (BITS_PER_BYTE, *GRAMMAR)
 NO_FAMILY: tuple[str, ...] = ()
 LEARNED_VS_BASELINE = "learned_vs_baseline"
 

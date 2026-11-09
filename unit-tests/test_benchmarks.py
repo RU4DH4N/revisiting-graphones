@@ -32,6 +32,7 @@ from workers.benchmarks import (
     nearest_accuracy,
     parallel,
     part_of_speech,
+    translations,
 )
 from workers.evaluate import Scores
 from workers.settings import parse
@@ -236,14 +237,9 @@ def test_control_tags_follow_the_tag_frequencies() -> None:
     assert np.mean([tag == 0 for tag in drawn.values()]) == pytest.approx(0.9, abs=0.03)
 
 
-def test_tags_written_into_the_messages_are_read_back_in_both_languages(
-    tiny: Tiny,
-) -> None:
-    rng = np.random.default_rng(0)
-    documents = {
-        part: np.flatnonzero(np.isin(tiny.corpus.parts[part].languages, [0, 1]))
-        for part in ("ud-dev", "ud-test")
-    }
+def tagged_messages(
+    tiny: Tiny, documents: dict[str, np.ndarray], rng: np.random.Generator
+) -> dict[str, list[np.ndarray]]:
     messages = {}
     for part, chosen in documents.items():
         encoded, tags = tiny.corpus.parts[part], tiny.corpus.tags[part]
@@ -256,6 +252,18 @@ def test_tags_written_into_the_messages_are_read_back_in_both_languages(
             )
             rows.append(noisy.astype(np.float32))
         messages[part] = rows
+    return messages
+
+
+def test_tags_written_into_the_messages_are_read_back_in_both_languages(
+    tiny: Tiny,
+) -> None:
+    rng = np.random.default_rng(0)
+    documents = {
+        part: np.flatnonzero(np.isin(tiny.corpus.parts[part].languages, [0, 1]))
+        for part in ("ud-dev", "ud-test")
+    }
+    messages = tagged_messages(tiny, documents, rng)
     found = part_of_speech(tiny.corpus, messages, documents, [0, 1], MEASURES)
     assert 0.6 < found.pos_accuracy < 0.85
     assert 0 < found.pos_selectivity < found.pos_accuracy
@@ -286,6 +294,22 @@ def test_messages_that_only_name_the_word_have_no_selectivity_or_transfer(
     assert found.pos_accuracy > 0.9
     assert abs(found.pos_selectivity) < 0.1
     assert found.pos_transfer < 0.5
+
+
+def test_one_language_has_part_of_speech_but_no_transfer_or_translations(
+    tiny: Tiny,
+) -> None:
+    rng = np.random.default_rng(0)
+    documents = {
+        part: np.flatnonzero(tiny.corpus.parts[part].languages == 0)
+        for part in ("ud-dev", "ud-test")
+    }
+    messages = tagged_messages(tiny, documents, rng)
+    found = part_of_speech(tiny.corpus, messages, documents, [0], MEASURES)
+    assert 0.5 < found.pos_accuracy and found.pos_selectivity > 0
+    assert math.isnan(found.pos_transfer)
+    missing = translations(messages, documents, [0], "selection", MEASURES)
+    assert all(math.isnan(value) for value in asdict(missing).values())
 
 
 class Reply:

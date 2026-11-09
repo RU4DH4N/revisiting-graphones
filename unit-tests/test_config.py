@@ -2,11 +2,13 @@ import copy
 from collections.abc import Callable
 from dataclasses import asdict
 from functools import partial
+from pathlib import Path
 
 import pytest
 from conftest import config, set_value
 
-from workers.settings import parse
+from models.graphone import FEATURES
+from workers.settings import parse, read_config
 
 BASE = {
     "seeds": 2,
@@ -23,6 +25,8 @@ BASE = {
     "release_fraction": None,
     "release_from": None,
     "table": None,
+    "rotation": False,
+    "projection_rank": None,
 }
 
 
@@ -79,6 +83,14 @@ def test_an_arm_without_a_projection_takes_its_width_from_the_trunk() -> None:
         ({"a": {**BASE, "streams": "letters", "mix": "learned"}}, "nothing to mix"),
         ({"a": {**BASE, "streams": "bytes", "mix": "learned"}}, "nothing to mix"),
         ({"a": {**BASE, "mix": "kept"}}, "keeping the letters needs three streams"),
+        ({"a": {**BASE, "rotation": True}}, "a rotation reads the gate's features"),
+        ({"a": {**BASE, "projection_rank": 0}}, "below the code and trunk widths"),
+        ({"a": {**BASE, "projection_rank": 1.5}}, "below the code and trunk widths"),
+        ({"a": {**BASE, "projection_rank": 64}}, "below the code and trunk widths"),
+        (
+            {"a": {**BASE, "input_mlp": True, "projection_rank": 4}},
+            "only a linear projection takes a rank",
+        ),
     ],
 )
 def test_broken_arm_definitions_are_refused(arms: dict, message: str) -> None:
@@ -121,7 +133,11 @@ TABLED = {**BASE, "streams": "triple", "mix": "table", "table": "avg"}
             None,
             "need tables.source to name a learned three-stream",
         ),
-        ({"full": BASE}, with_value(("data", "languages"), ["en"]), "exactly two"),
+        (
+            {"full": BASE},
+            with_value(("data", "languages"), ["en", "fr", "ru"]),
+            "one or two languages",
+        ),
         ({"full": BASE}, without_voice, r"graphones.voices has nothing for \['fr'\]"),
         ({"full": BASE}, with_value(("data", "unit_coverage"), 1.5), "at most 1"),
         (
@@ -146,3 +162,22 @@ def test_broken_settings_are_refused(
         change(settings)
     with pytest.raises(ValueError, match=message):
         parse(settings)
+
+
+def test_a_config_may_name_a_single_language() -> None:
+    settings = copy.deepcopy(settings_with({"full": BASE}))
+    set_value(("data", "languages"), ["en"], settings)
+    assert parse(settings).data.languages == ["en"]
+
+
+def test_the_matched_projection_has_about_as_many_parameters_as_the_rotation() -> None:
+    paper = read_config(Path(__file__).parent.parent / "config/en-fr.json")
+    rotated, ranked = paper.arms["rotated-direct"], paper.arms["triple-rank-matched"]
+    hidden, width = paper.model.gate_hidden, rotated.code_width
+    rotation = (
+        (len(FEATURES) + 4) * hidden + hidden + (hidden + 1) * (width // 2 + width)
+    )
+    rank = ranked.projection_rank
+    assert rank is not None
+    projection = rank * (ranked.code_width + paper.trunk_width)
+    assert abs(projection - rotation) / rotation < 0.05

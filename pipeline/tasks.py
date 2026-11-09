@@ -186,6 +186,11 @@ class ArmTask(Task):
         super().__init__(context)
         if arm not in context.config.arms:
             raise ValueError(f"the config defines no arm named {arm}")
+        if context.config.arms[arm].ruled and len(context.config.data.languages) < 2:
+            raise ValueError(
+                f"arm {arm} releases its gate on the language gauge, "
+                "which needs two languages"
+            )
         self.arm = arm
 
     @property
@@ -193,7 +198,7 @@ class ArmTask(Task):
         return self.settings.arms[self.arm]
 
     def task_parameters(self) -> dict:
-        return {"arm": self.arm, "spec": asdict(self.spec)}
+        return {"arm": self.arm, "spec": self.context.identity["arms"][self.arm]}
 
     def worker_arguments(self) -> tuple[str, ...]:
         return (entry.ARM, self.arm)

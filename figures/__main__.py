@@ -5,7 +5,16 @@ from pathlib import Path
 
 from experiments.release_timing import ReleaseTiming
 from experiments.trajectory import Trajectory
-from figures import ambiguity, compute, contrasts, losses, replay, tables, training
+from figures import (
+    ambiguity,
+    compute,
+    contrasts,
+    gates,
+    losses,
+    replay,
+    tables,
+    training,
+)
 from figures.common import Inputs, missing
 from framework.paths import ARTEFACTS, portable_path
 from workers.layout import Layout
@@ -24,6 +33,7 @@ FIGURES: dict[str, tuple[Draw, tuple[str, ...]]] = {
     contrasts.SEEDS: (contrasts.seeds, ()),
     tables.TABLES: (tables.tables, ()),
     compute.COMPUTE: (compute.compute, compute.NEEDS),
+    gates.GATE_NUMBERS: (gates.gate_numbers, gates.NEEDS),
 }
 
 

@@ -60,9 +60,18 @@ def mlp_extra(config: Config, arm: Arm) -> int:
     )
 
 
+def rank_saving(config: Config, arm: Arm) -> int:
+    if arm.projection_rank is None:
+        return 0
+    width = plan(config).trunk.d_model
+    return arm.code_width * width - arm.projection_rank * (arm.code_width + width)
+
+
 def trunk_parameters(config: Config, arm: Arm) -> int:
-    return design.shaped_trunk_count(plan(config).trunk, arm.code_width) + mlp_extra(
-        config, arm
+    return (
+        design.shaped_trunk_count(plan(config).trunk, arm.code_width)
+        + mlp_extra(config, arm)
+        - rank_saving(config, arm)
     )
 
 

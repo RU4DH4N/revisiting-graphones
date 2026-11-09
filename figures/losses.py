@@ -67,8 +67,8 @@ def frequency_bands(
 
 def band_rates(scores: dict[str, np.ndarray], bands: np.ndarray) -> np.ndarray:
     nats = np.bincount(bands, weights=scores["nats"], minlength=BANDS)
-    symbols = np.bincount(bands, weights=scores["symbols"], minlength=BANDS)
-    return nats / np.maximum(symbols, 1) / math.log(2)
+    spelled = np.bincount(bands, weights=scores["symbols"] - 1, minlength=BANDS)
+    return nats / np.maximum(spelled, 1) / math.log(2)
 
 
 def band_gaps(inputs: Inputs) -> np.ndarray:

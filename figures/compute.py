@@ -14,12 +14,14 @@ from figures.tables import TABLES, macro
 from framework.seeds import seed_for
 from framework.storage import read_json
 from models.bilingual import IGNORE, GraphoneModel
+from models.graphone import distinct_terms
 from workers.arms import assemble, expander_for
 from workers.batches import WindowSampler, WordBatch
 from workers.design import Sizing, read_sizing
 
 NEEDS = (Headline.name,)
 COMPUTE = "compute"
+FLOPS = "flop-count"
 CPU = torch.device("cpu")
 
 
@@ -34,7 +36,7 @@ class Cost:
 
 
 def counted_batch(
-    inputs: Inputs, corpus: BilingualCorpus, tables: Tables, arm: str
+    inputs: Inputs, corpus: BilingualCorpus, tables: Tables, arm: str, purpose: str
 ) -> WordBatch:
     config = inputs.config
     expander = expander_for(corpus, tables, config.arms[arm], CPU)
@@ -44,7 +46,7 @@ def counted_batch(
         spoken,
         config.context_words,
         config.batch_windows,
-        seed_for(config.root_seed, "flop-count"),
+        seed_for(config.root_seed, purpose),
     )
     return expander(sampler.draw())
 
@@ -68,10 +70,17 @@ def input_flops(model: GraphoneModel, batch: WordBatch) -> float:
     return float(counter.get_total_flops())
 
 
-def gate_flops(model: GraphoneModel) -> float:
+def gate_flops(model: GraphoneModel, batch: WordBatch) -> float:
     code = model.trunk.code
     with torch.no_grad(), FlopCounterMode(display=False) as counter:
         code.directions()
+        if code.spec.rotation:
+            unit, start, end, _, _ = distinct_terms(
+                batch.context, code.positions.shape[0]
+            )
+            hidden = code.rotation_hidden(unit, start, end)
+            code.gate_rotate_angles(hidden)
+            code.gate_mirror_out(hidden)
     return float(counter.get_total_flops())
 
 
@@ -86,7 +95,7 @@ def cost(
         training_flops(model, batch),
         forward_flops(model, batch) / words,
         input_flops(model, batch) / words,
-        gate_flops(model),
+        gate_flops(model, batch),
     )
 
 
@@ -105,8 +114,8 @@ def row(found: Cost) -> str:
     )
 
 
-def macros(found: Cost) -> list[str]:
-    name = macro(COMPUTE, found.arm)
+def macros(prefix: str, found: Cost) -> list[str]:
+    name = macro(prefix, COMPUTE, found.arm)
     return [
         f"\\newcommand{{\\{name}Parameters}}{{{found.parameters / 1e6:.2f}M}}",
         f"\\newcommand{{\\{name}TrainStep}}{{{scientific(found.train_step)}}}",
@@ -120,11 +129,17 @@ def compute(inputs: Inputs) -> list[Path]:
     tables = read_tables(inputs.layout.graphones)
     corpus = BilingualCorpus(inputs.layout.corpus)
     found = [
-        cost(inputs, sizing, tables, counted_batch(inputs, corpus, tables, arm), arm)
+        cost(
+            inputs,
+            sizing,
+            tables,
+            counted_batch(inputs, corpus, tables, arm, FLOPS),
+            arm,
+        )
         for arm in inputs.config.arms
     ]
     folder = inputs.folder / TABLES
-    lines = [line for item in found for line in macros(item)]
+    lines = [line for item in found for line in macros(inputs.config_path.stem, item)]
     return [
         written(
             folder / f"{COMPUTE}.tex", "\n".join(row(item) for item in found) + "\n"

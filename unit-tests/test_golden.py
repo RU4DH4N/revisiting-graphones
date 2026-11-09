@@ -44,7 +44,14 @@ def test_the_gate_starts_from_the_same_weights_whatever_came_before() -> None:
     rows = BLANK + 1
     ones = np.ones((rows, 8), dtype=np.int8)
     tables = StreamTables(
-        ones, ones, ones, np.ones(rows, bool), np.zeros((rows, 3), np.float32), None, 4
+        ones,
+        ones,
+        ones,
+        np.ones(rows, bool),
+        np.zeros((rows, 3), np.float32),
+        np.ones(rows),
+        None,
+        4,
     )
     spec = MixSpec(
         "triple",
@@ -55,6 +62,8 @@ def test_the_gate_starts_from_the_same_weights_whatever_came_before() -> None:
         64,
         seed_for(ROOT_SEED, 0, "gate"),
         seed_for(ROOT_SEED, 0, "shuffle"),
+        False,
+        seed_for(ROOT_SEED, 0, "rotation"),
     )
     code = GraphoneCode(spec, tables, 11)
     assert digest(code.gate_hidden.weight.detach().numpy()) == "91872c395d2cce16"

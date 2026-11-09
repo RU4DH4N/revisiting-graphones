@@ -40,24 +40,25 @@ def tables(table: np.ndarray | None) -> StreamTables:
         joint=signs(rng),
         has=HAS,
         features=rng.random((ROWS, 3)).astype(np.float32),
+        uses=rng.integers(0, 50, ROWS).astype(np.float64),
         table=table,
         slots=5,
     )
 
 
 def built(
-    mix: str, switch: bool, table: np.ndarray | None, streams: str
+    mix: str, switch: bool, table: np.ndarray | None, streams: str, rotation: bool
 ) -> GraphoneCode:
-    spec = MixSpec(streams, mix, FEATURES, False, switch, 64, 5, 6)
+    spec = MixSpec(streams, mix, FEATURES, False, switch, 64, 5, 6, rotation, 7)
     return GraphoneCode(spec, tables(table), 11)
 
 
 def code(mix: str) -> GraphoneCode:
-    return built(mix, False, None, TRIPLE)
+    return built(mix, False, None, TRIPLE, False)
 
 
 def tabled(table: np.ndarray, switch: bool) -> GraphoneCode:
-    return built(TABLE, switch, table, TRIPLE)
+    return built(TABLE, switch, table, TRIPLE, False)
 
 
 def fixed(*shares: float) -> np.ndarray:
@@ -69,7 +70,7 @@ UNITS = torch.tensor([[0, 1, 3, BLANK, BLANK], [2, 4, 5, 1, BLANK]])
 
 @pytest.mark.parametrize("streams", [LETTERS, BYTES])
 def test_a_single_stream_code_reads_no_sounds(streams: str) -> None:
-    spec = MixSpec(streams, EQUAL, FEATURES, False, False, 64, 5, 6)
+    spec = MixSpec(streams, EQUAL, FEATURES, False, False, 64, 5, 6, False, 7)
     plain = tables(None)
     flipped = StreamTables(
         plain.letters,
@@ -77,6 +78,7 @@ def test_a_single_stream_code_reads_no_sounds(streams: str) -> None:
         -plain.joint,
         plain.has,
         plain.features,
+        plain.uses,
         None,
         plain.slots,
     )
@@ -164,7 +166,7 @@ def test_the_word_code_is_the_slot_sum_of_weighted_streams_times_position_codes(
         (TRIPLE, EQUAL, None),
         (TRIPLE, TABLE, fixed(0.5, 0.3, 0.2)),
     ):
-        found = built(mix, False, table, streams)
+        found = built(mix, False, table, streams, False)
         parts = [found.letters[UNITS], found.sounds[UNITS]]
         if streams == "triple":
             parts.append(found.joint[UNITS])
@@ -191,7 +193,7 @@ def test_shuffled_features_move_between_sounded_rows_only() -> None:
 
 
 def split_code(mix: str) -> GraphoneCode:
-    return built(mix, False, None, SPLIT)
+    return built(mix, False, None, SPLIT, False)
 
 
 def test_a_new_two_stream_learned_mix_starts_as_the_two_stream_equal_mix() -> None:
@@ -240,3 +242,77 @@ def test_flipping_some_graphones_sound_sign_changes_the_word_code_beyond_a_sign(
     changed = tabled(flipped, False)(UNITS)
     assert not torch.allclose(words, changed)
     assert not torch.allclose(words, -changed)
+
+
+def rotating() -> GraphoneCode:
+    return built(LEARNED, False, None, TRIPLE, True)
+
+
+def randomised(found: GraphoneCode) -> GraphoneCode:
+    generator = torch.Generator().manual_seed(3)
+    with torch.no_grad():
+        for layer in (found.gate_rotate_angles, found.gate_mirror_out):
+            layer.weight.copy_(torch.randn(layer.weight.shape, generator=generator))
+    return found
+
+
+def test_a_new_rotation_turns_nothing_and_mirrors_every_term_alike() -> None:
+    words = code(LEARNED)(UNITS)
+    mirror = rotating().gate_mirror_out.bias.detach()
+    along = (words * mirror).sum(-1, keepdim=True) / (mirror * mirror).sum()
+    torch.testing.assert_close(rotating()(UNITS), words - 2 * mirror * along)
+
+
+def test_rotating_and_mirroring_keep_each_terms_length() -> None:
+    found = randomised(rotating())
+    terms = torch.randn(
+        5, MIXED_STREAMS * DIMS, generator=torch.Generator().manual_seed(4)
+    )
+    slots = torch.arange(5)
+    hidden = found.rotation_hidden(torch.tensor([0, 1, 3, 2, 4]), slots, 4 - slots)
+    turned = found.turned(terms, hidden)
+    torch.testing.assert_close(turned.norm(dim=-1), terms.norm(dim=-1))
+    assert not torch.allclose(turned, terms)
+
+
+def test_the_rotation_decides_from_the_unit_and_its_slot() -> None:
+    found = randomised(rotating())
+    slots = torch.arange(3)
+    hidden = found.rotation_hidden(torch.tensor([1, 1, 1]), slots, 2 - slots)
+    angles = found.gate_rotate_angles(hidden)
+    assert not torch.allclose(angles[0], angles[1])
+    assert not torch.allclose(angles[1], angles[2])
+
+
+def test_a_rotated_word_is_the_sum_of_its_turned_slot_terms() -> None:
+    found = randomised(rotating())
+    expected = []
+    for word in UNITS:
+        live = word[word != BLANK]
+        slots = torch.arange(len(live))
+        terms = torch.cat(found.weighted(live), dim=-1)
+        hidden = found.rotation_hidden(live, slots, len(live) - 1 - slots)
+        turned = found.turned(terms * found.positions[slots], hidden)
+        expected.append(turned.sum(0))
+    torch.testing.assert_close(found(UNITS), torch.stack(expected))
+
+
+def test_padding_adds_nothing_to_a_rotated_word_code() -> None:
+    found = randomised(rotating())
+    short = torch.tensor([[0, 1, 3]])
+    torch.testing.assert_close(found(UNITS[:1]), found(short))
+
+
+def test_building_a_rotation_leaves_the_global_generator_and_the_gate_alone() -> None:
+    torch.manual_seed(5)
+    expected = torch.rand(3)
+    torch.manual_seed(5)
+    found = rotating()
+    assert torch.equal(torch.rand(3), expected)
+    assert torch.equal(found.gate_hidden.weight, code(LEARNED).gate_hidden.weight)
+    turned = [
+        name
+        for name, _ in found.named_parameters()
+        if "rotate" in name or "mirror" in name
+    ]
+    assert turned and all(name.startswith("gate_") for name in turned)

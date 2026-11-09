@@ -26,7 +26,7 @@ from workers import design
 from workers.arms import assemble, load_model, mix_spec, stream_tables
 from workers.batches import Expander, WindowSampler, WordBatch
 from workers.evaluate import Scorer
-from workers.train import GATE_PREFIX, train
+from workers.train import train
 
 CPU = torch.device("cpu")
 
@@ -128,16 +128,15 @@ def test_every_parameter_learns_within_three_steps(tiny: Tiny) -> None:
 
 
 def gates(model: GraphoneModel) -> dict[str, Tensor]:
-    return {
-        name: p.detach().clone()
-        for name, p in model.named_parameters()
-        if name.startswith(GATE_PREFIX)
-    }
+    return {name: p.detach().clone() for name, p in model.trunk.code.named_parameters()}
 
 
+@pytest.mark.parametrize("rotation", [False, True])
 @pytest.mark.parametrize("held", [True, False])
-def test_a_held_gate_stays_at_its_start_until_release(tiny: Tiny, held: bool) -> None:
-    arm = with_arm(tiny.settings, "learned-direct", hold=held)
+def test_a_held_gate_stays_at_its_start_until_release(
+    tiny: Tiny, held: bool, rotation: bool
+) -> None:
+    arm = with_arm(tiny.settings, "learned-direct", hold=held, rotation=rotation)
     settings = replace(arm, gauge=replace(arm.gauge, interval=100))
     trained = train(
         settings,
@@ -155,6 +154,7 @@ def test_a_held_gate_stays_at_its_start_until_release(tiny: Tiny, held: bool) ->
     )
     assert trained.metrics.released_at is None
     assert start
+    assert any("rotate" in n for n in start) == rotation
     assert all(torch.equal(start[n], end[n]) for n in start) == held
 
 
@@ -367,3 +367,28 @@ def test_an_input_mlp_replaces_only_the_projection(tiny: Tiny) -> None:
     assert mlp.in_proj[2].out_features == width
     blocks = [sum(p.numel() for p in t.blocks.parameters()) for t in (linear, mlp)]
     assert blocks[0] == blocks[1]
+
+
+def test_a_ranked_projection_keeps_the_best_directions_at_the_full_norm(
+    tiny: Tiny,
+) -> None:
+    rank = 4
+    settings = with_arm(tiny.settings, "baseline", projection_rank=rank)
+    ranked = model_with(tiny, settings, "baseline")
+    full = model_for(tiny, "baseline")
+    projection = ranked.trunk.trunk.in_proj
+    assert isinstance(projection, nn.Sequential)
+    first, second = projection[0], projection[1]
+    assert isinstance(first, nn.Linear) and isinstance(second, nn.Linear)
+    weight = (second.weight @ first.weight).double()
+    whole = full.trunk.trunk.in_proj
+    assert isinstance(whole, nn.Linear)
+    original = whole.weight.double()
+    u, s, vh = torch.linalg.svd(original)
+    best = u[:, :rank] @ torch.diag(s[:rank]) @ vh[:rank]
+    torch.testing.assert_close(
+        weight, best * original.norm() / best.norm(), rtol=1e-5, atol=1e-6
+    )
+    shared = {n: p for n, p in ranked.named_parameters() if "in_proj" not in n}
+    assert shared
+    assert all(torch.equal(p, full.get_parameter(n)) for n, p in shared.items())

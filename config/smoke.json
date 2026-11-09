@@ -105,6 +105,12 @@
   },
   "learned-direct-large": {
    "seeds": 2
+  },
+  "rotated-direct": {
+   "seeds": 2
+  },
+  "triple-rank-matched": {
+   "seeds": 2
   }
  },
  "gauge": {

@@ -62,9 +62,15 @@ def test_the_compiled_path_tracks_eager_within_the_bf16_noise(tiny: Tiny) -> Non
     counters.clear()
     stack = stacked(tiny, settings)
     compile_for(stack, CUDA)
-    addresses = {name: value.data_ptr() for name, value in stack.state().items()}
+    addresses = [
+        value.data_ptr()
+        for value in (*stack.trunk_state().values(), *stack.receiver.values())
+    ]
     compiled = trained(stack, settings, BF16, data)
-    moved = {name: value.data_ptr() for name, value in stack.state().items()}
+    moved = [
+        value.data_ptr()
+        for value in (*stack.trunk_state().values(), *stack.receiver.values())
+    ]
     eager = trained(stacked(tiny, settings), settings, BF16, data)
     exact = trained(stacked(tiny, settings), settings, FP32, data)
     assert counters["inductor"]["cudagraph_skips"] == 0

@@ -1,0 +1,19 @@
+{
+ "extends": "paper.json",
+ "data": {
+  "languages": [
+   "en"
+  ],
+  "bytes": {
+   "train": 60000000
+  }
+ },
+ "arms": {
+  "triple": {
+   "seeds": 5
+  },
+  "bytes-only": {
+   "seeds": 5
+  }
+ }
+}
