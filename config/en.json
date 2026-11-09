@@ -10,10 +10,10 @@
  },
  "arms": {
   "triple": {
-   "seeds": 5
+   "seeds": 10
   },
   "bytes-only": {
-   "seeds": 5
+   "seeds": 10
   }
  }
 }

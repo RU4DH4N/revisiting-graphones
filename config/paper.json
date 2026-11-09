@@ -206,7 +206,7 @@
   },
   "triple": {
    "extends": "baseline",
-   "seeds": 5,
+   "seeds": 10,
    "streams": "triple"
   },
   "triple-direct": {
@@ -323,12 +323,12 @@
   },
   "rotated-direct": {
    "extends": "learned-direct",
-   "seeds": 5,
+   "seeds": 10,
    "rotation": true
   },
   "triple-rank-matched": {
    "extends": "triple",
-   "seeds": 5,
+   "seeds": 10,
    "projection_rank": 21
   }
  },
