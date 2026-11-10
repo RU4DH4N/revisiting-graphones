@@ -4,5 +4,25 @@
   "languages": [
    "en"
   ]
+ },
+ "arms": {
+  "learned-direct": {
+   "seeds": 2,
+   "hold": false
+  },
+  "rotated-direct": {
+   "seeds": 2,
+   "hold": false
+  },
+  "fixed-at": {
+   "hold": true,
+   "release_from": null
+  },
+  "fixed-early": {
+   "hold": true
+  },
+  "fixed-late": {
+   "hold": true
+  }
  }
 }

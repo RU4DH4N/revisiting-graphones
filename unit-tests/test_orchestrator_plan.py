@@ -334,5 +334,6 @@ def test_one_language_refuses_an_arm_released_by_the_language_gauge() -> None:
         ROOT / "config" / "en.json", ROOT / "artefacts" / "en", "selection", "cuda"
     )
     assert Train(context, "triple").arm == "triple"
+    assert Train(context, "rotated-direct").arm == "rotated-direct"
     with pytest.raises(ValueError, match="needs two languages"):
-        Train(context, "learned-direct")
+        Train(context, "learned")

@@ -14,6 +14,30 @@
   },
   "bytes-only": {
    "seeds": 10
+  },
+  "letters-only": {
+   "seeds": 10
+  },
+  "learned-direct": {
+   "seeds": 10,
+   "hold": false
+  },
+  "rotated-direct": {
+   "seeds": 10,
+   "hold": false
+  },
+  "triple-rank-matched": {
+   "seeds": 10
+  },
+  "fixed-at": {
+   "hold": true,
+   "release_from": null
+  },
+  "fixed-early": {
+   "hold": true
+  },
+  "fixed-late": {
+   "hold": true
   }
  }
 }
