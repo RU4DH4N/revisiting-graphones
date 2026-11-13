@@ -17,7 +17,7 @@ from orchestrator.context import Context
 from orchestrator.contract import CPU, LOCAL, SHARED, Contract, estimate_of
 from workers import entry, estimates
 from workers.layout import Layout
-from workers.settings import Arm, Config
+from workers.settings import LANGUAGE, Arm, Config
 
 DESIGN_FIELDS = (
     "data",
@@ -186,7 +186,9 @@ class ArmTask(Task):
         super().__init__(context)
         if arm not in context.config.arms:
             raise ValueError(f"the config defines no arm named {arm}")
-        if context.config.arms[arm].ruled and len(context.config.data.languages) < 2:
+        spec = context.config.arms[arm]
+        labelled = spec.ruled and spec.trigger == LANGUAGE
+        if labelled and len(context.config.data.languages) < 2:
             raise ValueError(
                 f"arm {arm} releases its gate on the language gauge, "
                 "which needs two languages"

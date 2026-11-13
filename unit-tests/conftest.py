@@ -115,6 +115,7 @@ def arm(code_dims: int, streams: str, mix: str, **changes: object) -> dict:
         "release_from": None,
         "table": None,
         "rotation": False,
+        "trigger": "language",
         "projection_rank": None,
         **changes,
     }

@@ -27,7 +27,10 @@ if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
 EXTENDS = "extends"
-UNSET_LATER = {"rotation": False, "projection_rank": None}
+LANGUAGE = "language"
+DIRECTION = "direction"
+TRIGGERS = (LANGUAGE, DIRECTION)
+UNSET_LATER = {"rotation": False, "projection_rank": None, "trigger": LANGUAGE}
 CODE_DIMS = "code_dims"
 SCALARS = (int, float, str, bool)
 
@@ -94,6 +97,7 @@ class Arm:
     table: str | None
     rotation: bool
     projection_rank: int | None
+    trigger: str
 
     @property
     def code_width(self) -> int:
@@ -387,6 +391,12 @@ def check_release(name: str, arm: Arm, arms: dict[str, Arm]) -> None:
     fixed = arm.release_fraction is not None or arm.release_from is not None
     if fixed and not arm.hold:
         raise ValueError(f"arm {name}: only a held arm has a release to fix")
+    if arm.trigger not in TRIGGERS:
+        raise ValueError(f"arm {name}: trigger must be one of {TRIGGERS}")
+    if arm.trigger == DIRECTION and not arm.ruled:
+        raise ValueError(
+            f"arm {name}: only an arm released by the rule reads the direction"
+        )
     if arm.release_fraction is not None and arm.release_from is not None:
         raise ValueError(f"arm {name}: a release is fixed by a fraction or an arm")
     if arm.release_fraction is not None and not 0 < arm.release_fraction < 1:

@@ -22,6 +22,13 @@ class GaugePoint:
 
 
 @dataclass(frozen=True)
+class DirectionPoint:
+    step: int
+    share: float
+    noise: float
+
+
+@dataclass(frozen=True)
 class Metrics:
     arm: str
     replicate: int
@@ -33,6 +40,7 @@ class Metrics:
     released_at: int | None
     curve: list[CurvePoint]
     gauge: list[GaugePoint]
+    direction: list[DirectionPoint]
 
 
 def read_metrics(raw: dict) -> Metrics:
@@ -41,6 +49,9 @@ def read_metrics(raw: dict) -> Metrics:
             **raw,
             "curve": [CurvePoint(**point) for point in raw["curve"]],
             "gauge": [GaugePoint(**point) for point in raw["gauge"]],
+            "direction": [
+                DirectionPoint(**point) for point in raw.get("direction", [])
+            ],
         }
     )
 

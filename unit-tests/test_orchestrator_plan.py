@@ -325,6 +325,22 @@ def test_fields_added_later_stay_out_of_a_task_key_until_they_are_set() -> None:
     rotated = Train(context, "rotated-direct").task_parameters()["spec"]
     ranked = Train(context, "triple-rank-matched").task_parameters()["spec"]
     assert not set(UNSET_LATER) & set(plain)
+    assert set(plain) == {
+        "seeds",
+        "projection",
+        "input_mlp",
+        "code_dims",
+        "matched",
+        "receiver_scale",
+        "streams",
+        "mix",
+        "features",
+        "shuffled",
+        "hold",
+        "release_fraction",
+        "release_from",
+        "table",
+    }
     assert rotated["rotation"] is True and "projection_rank" not in rotated
     assert ranked["projection_rank"] == 21 and "rotation" not in ranked
 
@@ -335,5 +351,6 @@ def test_one_language_refuses_an_arm_released_by_the_language_gauge() -> None:
     )
     assert Train(context, "triple").arm == "triple"
     assert Train(context, "rotated-direct").arm == "rotated-direct"
+    assert Train(context, "rotated-held").arm == "rotated-held"
     with pytest.raises(ValueError, match="needs two languages"):
         Train(context, "learned")

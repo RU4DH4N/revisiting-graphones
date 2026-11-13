@@ -14,9 +14,9 @@ from torch import nn
 from data.graphones import Tables, read_tables, table_file
 from framework.runtime import cosine_schedule
 from models.graphone import MIXED_STREAMS
-from workers import design
+from workers import design, train as training
 from workers.arms import assemble
-from workers.records import CurvePoint, GaugePoint
+from workers.records import CurvePoint, DirectionPoint, GaugePoint
 from workers.settings import Config, Release, parse
 from workers.stacked import Stack, clip_by_seed
 from workers.train import (
@@ -275,6 +275,60 @@ def test_a_short_run_learns_and_records_its_gauge(tiny: Tiny) -> None:
     steps, table = trained.gates.snapshot_steps[0], trained.gates.snapshots[0]
     assert steps == 0 and table.shape == (len(tiny.tables.has), MIXED_STREAMS)
     assert np.allclose(np.square(table).sum(1), 1.0)
+
+
+def test_a_direction_arm_records_the_share_it_releases_on(tiny: Tiny) -> None:
+    held = with_arm(tiny.settings, "learned-direct", hold=True)
+    turned = with_arm(held, "learned-direct", trigger="direction")
+    found = {
+        name: train(
+            settings,
+            replace(tiny.sizing, steps=12),
+            tiny.corpus,
+            tiny.tables,
+            "learned-direct",
+            [0],
+            [None],
+            CPU,
+        )[0].metrics
+        for name, settings in (("language", held), ("direction", turned))
+    }
+    assert found["language"].direction == []
+    readings = found["direction"].direction
+    assert [point.step for point in readings] == [1, 5, 10]
+    assert all(0.0 <= point.share <= 1.0 for point in readings)
+    assert [point.step for point in found["direction"].gauge] == [1, 5, 10]
+
+
+def never_shared(values: torch.Tensor, labels: torch.Tensor, classes: int) -> float:
+    return math.nan
+
+
+def risen_then_fallen(messages: torch.Tensor, step: int) -> DirectionPoint:
+    return DirectionPoint(step, {1: 0.1, 5: 0.9, 10: 0.2}[step], 0.0)
+
+
+def test_a_direction_arm_releases_on_the_direction_reading(
+    tiny: Tiny, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(training, "variance_share", never_shared)
+    monkeypatch.setattr(training, "direction_reading", risen_then_fallen)
+    held = with_arm(tiny.settings, "learned-direct", hold=True)
+    turned = with_arm(held, "learned-direct", trigger="direction")
+    released = [
+        train(
+            settings,
+            replace(tiny.sizing, steps=12),
+            tiny.corpus,
+            tiny.tables,
+            "learned-direct",
+            [0],
+            [None],
+            CPU,
+        )[0].metrics.released_at
+        for settings in (held, turned)
+    ]
+    assert released == [None, 10]
 
 
 def test_every_step_is_recorded_and_the_curve_is_its_block_average(

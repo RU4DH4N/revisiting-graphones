@@ -177,6 +177,7 @@
    "release_from": null,
    "table": null,
    "rotation": false,
+   "trigger": "language",
    "projection_rank": null
   },
   "baseline-mlp": {

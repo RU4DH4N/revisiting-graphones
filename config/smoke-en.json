@@ -14,6 +14,11 @@
    "seeds": 2,
    "hold": false
   },
+  "rotated-held": {
+   "extends": "rotated-direct",
+   "hold": true,
+   "trigger": "direction"
+  },
   "fixed-at": {
    "hold": true,
    "release_from": null

@@ -26,6 +26,7 @@ BASE = {
     "release_from": None,
     "table": None,
     "rotation": False,
+    "trigger": "language",
     "projection_rank": None,
 }
 
@@ -84,6 +85,11 @@ def test_an_arm_without_a_projection_takes_its_width_from_the_trunk() -> None:
         ({"a": {**BASE, "streams": "bytes", "mix": "learned"}}, "nothing to mix"),
         ({"a": {**BASE, "mix": "kept"}}, "keeping the letters needs three streams"),
         ({"a": {**BASE, "rotation": True}}, "a rotation reads the gate's features"),
+        ({"a": {**BASE, "trigger": "sound"}}, "trigger must be one of"),
+        (
+            {"a": {**BASE, "mix": "learned", "trigger": "direction"}},
+            "only an arm released by the rule reads the direction",
+        ),
         ({"a": {**BASE, "projection_rank": 0}}, "below the code and trunk widths"),
         ({"a": {**BASE, "projection_rank": 1.5}}, "below the code and trunk widths"),
         ({"a": {**BASE, "projection_rank": 64}}, "below the code and trunk widths"),

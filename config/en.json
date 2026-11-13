@@ -26,6 +26,11 @@
    "seeds": 10,
    "hold": false
   },
+  "rotated-held": {
+   "extends": "rotated-direct",
+   "hold": true,
+   "trigger": "direction"
+  },
   "triple-rank-matched": {
    "seeds": 10
   },

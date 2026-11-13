@@ -4,6 +4,7 @@ from experiments.fixed_tables import FixedTables
 from experiments.graphones_vs_bytes import GraphonesVsBytes
 from experiments.graphones_vs_letters import GraphonesVsLetters
 from experiments.headline import Headline
+from experiments.held_rotation import HeldRotation
 from experiments.learned_mix import LearnedMix
 from experiments.letter_cut import LetterCut
 from experiments.mix_ablation import MixAblation
@@ -34,7 +35,7 @@ EXPERIMENTS = (
     RotationMatchesProjection,
     RotationGain,
 )
-REPORTED = (*EXPERIMENTS, OneLanguage)
+REPORTED = (*EXPERIMENTS, OneLanguage, HeldRotation)
 
 
 class Everything(Task):
@@ -80,4 +81,5 @@ BY_FILE: dict[str, type[Task]] = {
     "rotation_matches_projection": RotationMatchesProjection,
     "rotation_gain": RotationGain,
     "one_language": OneLanguage,
+    "held_rotation": HeldRotation,
 }

@@ -33,16 +33,17 @@ from workers.batches import (
     prefetched,
 )
 from workers.design import Sizing
-from workers.gauge import variance_share
+from workers.gauge import direction_share, variance_share
 from workers.records import (
     CurvePoint,
+    DirectionPoint,
     GateRecord,
     GaugePoint,
     Metrics,
     StepRecord,
     no_gates,
 )
-from workers.settings import Config, Optimiser
+from workers.settings import DIRECTION, Config, Optimiser
 from workers.stacked import Stack, clip_by_seed
 
 
@@ -263,14 +264,27 @@ class GateHistory:
         )
 
 
+def halves(rows: int) -> tuple[slice, slice]:
+    half = rows // 2
+    return slice(None, half), slice(half, None)
+
+
+def disagreement(shares: list[float]) -> float:
+    return abs(shares[0] - shares[1])
+
+
 def reading(messages: Tensor, groups: Tensor, classes: int, step: int) -> GaugePoint:
-    half = messages.shape[0] // 2
-    halves = [
+    shares = [
         variance_share(messages[part], groups[part], classes)
-        for part in (slice(None, half), slice(half, None))
+        for part in halves(len(messages))
     ]
     share = variance_share(messages, groups, classes)
-    return GaugePoint(step, share, abs(halves[0] - halves[1]))
+    return GaugePoint(step, share, disagreement(shares))
+
+
+def direction_reading(messages: Tensor, step: int) -> DirectionPoint:
+    shares = [direction_share(messages[part]) for part in halves(len(messages))]
+    return DirectionPoint(step, direction_share(messages), disagreement(shares))
 
 
 class LanguageGauge:
@@ -297,8 +311,7 @@ class LanguageGauge:
             ]
         return torch.cat(found, dim=1)
 
-    def read(self, stack: Stack, step: int) -> list[GaugePoint]:
-        messages = self.messages(stack)
+    def points(self, messages: Tensor, step: int) -> list[GaugePoint]:
         return [
             reading(messages[k], self.groups[k], self.classes, step)
             for k in range(len(messages))
@@ -405,6 +418,8 @@ class Session:
         self.step_log = StepLog(steps, seeds, gauge.classes, device)
         self.curves: list[list[CurvePoint]] = [[] for _ in range(seeds)]
         self.gauges: list[list[GaugePoint]] = [[] for _ in range(seeds)]
+        self.directed = arm.trigger == DIRECTION
+        self.directions: list[list[DirectionPoint]] = [[] for _ in range(seeds)]
         self.learning = learning_mask(self.holds, device)
         self.started = 0.0
 
@@ -418,9 +433,15 @@ class Session:
         print(f"{label} step={at}/{self.steps} loss={mean:.4f}", flush=True)
 
     def measure(self, at: int) -> None:
-        for k, point in enumerate(self.gauge.read(self.stack, at)):
+        messages = self.gauge.messages(self.stack)
+        for k, point in enumerate(self.gauge.points(messages, at)):
             self.gauges[k].append(point)
-            if self.holds[k].observe(point.language, point.noise, at):
+            share, noise = point.language, point.noise
+            if self.directed:
+                turn = direction_reading(messages[k], at)
+                self.directions[k].append(turn)
+                share, noise = turn.share, turn.noise
+            if self.holds[k].observe(share, noise, at):
                 self.stack.release(k)
         self.learning = learning_mask(self.holds, self.device)
 
@@ -494,6 +515,7 @@ class Session:
                     released_at=self.holds[k].released_at,
                     curve=self.curves[k],
                     gauge=self.gauges[k],
+                    direction=self.directions[k],
                 ),
                 self.history.record(k, models[k]),
                 self.step_log.record(k),
