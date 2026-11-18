@@ -10,6 +10,7 @@ from experiments.letter_cut import LetterCut
 from experiments.mix_ablation import MixAblation
 from experiments.one_language import OneLanguage
 from experiments.projection_absorbs import ProjectionAbsorbs
+from experiments.projection_control import ProjectionControl
 from experiments.receiver_size import ReceiverSize
 from experiments.release_timing import ReleaseTiming
 from experiments.rotation_gain import RotationGain
@@ -35,7 +36,7 @@ EXPERIMENTS = (
     RotationMatchesProjection,
     RotationGain,
 )
-REPORTED = (*EXPERIMENTS, OneLanguage, HeldRotation)
+REPORTED = (*EXPERIMENTS, OneLanguage, HeldRotation, ProjectionControl)
 
 
 class Everything(Task):
@@ -82,4 +83,5 @@ BY_FILE: dict[str, type[Task]] = {
     "rotation_gain": RotationGain,
     "one_language": OneLanguage,
     "held_rotation": HeldRotation,
+    "projection_control": ProjectionControl,
 }

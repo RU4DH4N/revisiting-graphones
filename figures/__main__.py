@@ -9,6 +9,9 @@ from figures import (
     ambiguity,
     compute,
     contrasts,
+    failures,
+    findings,
+    floor,
     gates,
     losses,
     replay,
@@ -34,6 +37,11 @@ FIGURES: dict[str, tuple[Draw, tuple[str, ...]]] = {
     tables.TABLES: (tables.tables, ()),
     compute.COMPUTE: (compute.compute, compute.NEEDS),
     gates.GATE_NUMBERS: (gates.gate_numbers, gates.NEEDS),
+    floor.SHARE_FLOOR: (floor.share_floor, ()),
+    failures.FAILED_RUNS: (failures.failed_runs, failures.NEEDS),
+    findings.BENCHMARK: (findings.benchmark, findings.NEEDS),
+    findings.SHARES: (findings.share_figure, ()),
+    findings.PAIRS: (findings.pairs, ()),
 }
 
 

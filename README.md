@@ -62,10 +62,11 @@ its first letter. It then turns every word into letter, sound and joint units wi
 | E13. | TBD | `experiments/rotation_gain.py` |
 | E14. | TBD | `experiments/one_language.py` |
 | E15. | TBD | `experiments/held_rotation.py` |
+| E16. | TBD | `experiments/projection_control.py` |
 
 Every experiment compares its arms on bits per byte, MultiBLiMP accuracy, a linear part-of-speech probe (accuracy,
 selectivity, zero-shot transfer), FLORES retrieval (P@1, CSLS), linear CKA and late language share, each on the
-split's half of the benchmark. `experiments/everything.py` runs all experiments on a language pair. E14 and E15 run
+split's half of the benchmark. `experiments/everything.py` runs all experiments on a language pair. E14 to E16 run
 on English alone (`config/en.json`), so they have no retrieval, transfer, CKA or language share.
 
 ## Running an experiment

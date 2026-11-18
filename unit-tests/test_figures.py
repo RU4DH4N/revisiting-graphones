@@ -10,6 +10,9 @@ from data.graphones import read_tables
 from figures.ambiguity import BINS, ambiguity_bins, binned
 from figures.common import Inputs, smoothed
 from figures.compute import FLOPS, cost, counted_batch
+from figures.failures import failed, separated
+from figures.findings import contrast_row
+from figures.floor import logits, paired_log_ratio, welch
 from figures.losses import BANDS, frequency_bands
 from figures.replay import fired
 from figures.tables import formatted_cell, macro, numbers, probability, relation
@@ -123,3 +126,56 @@ def test_the_compute_table_counts_every_arm_and_only_gated_arms_pay_for_a_gate(
     for item in found.values():
         assert item.train_step > item.forward_word > item.input_word > 0
     assert found["learned-direct"].gate_step > 0 == found["baseline"].gate_step
+
+
+def test_a_stream_at_four_times_the_floor_in_every_seed_has_a_ratio_of_four() -> None:
+    floor = np.array([0.01, 0.02, 0.015, 0.012])
+    found = paired_log_ratio(4 * floor, floor)
+    assert np.isclose([found.ratio, found.low, found.high], 4.0).all()
+    assert (found.above, found.seeds) == (4, 4)
+
+
+def test_a_stream_level_with_the_floor_has_an_interval_that_holds_one() -> None:
+    floor = np.array([0.01, 0.02, 0.015, 0.012, 0.03])
+    found = paired_log_ratio(floor[::-1].copy(), floor)
+    assert found.low < 1 < found.high
+    assert found.above < found.seeds
+
+
+def test_a_floor_from_other_runs_counts_the_seeds_above_all_of_it() -> None:
+    floor = np.log(np.array([0.01, 0.02, 0.015, 0.012]))
+    tested = np.log(np.array([0.2, 0.25, 0.018, 0.3]))
+    found = welch(tested, floor)
+    assert (found.above, found.seeds) == (3, 4)
+    assert found.low < found.ratio < found.high
+
+
+def test_logits_put_an_equal_share_at_the_equal_start() -> None:
+    sums = np.array([[1.0, 1.0, 1.0], [2.0, 1.0, 1.0]])
+    assert np.allclose(logits(sums, 0), [-np.log(2), 0.0])
+
+
+def test_a_run_has_failed_when_it_ends_worse_than_the_average_bytes_run() -> None:
+    arms = {
+        "bytes-only": {"per_seed": {"bits_per_byte": [2.0, 2.1, 1.9]}},
+        "rotated-held": {"per_seed": {"bits_per_byte": [1.9, 2.05, 2.0]}},
+    }
+    assert failed({"arms": arms}, "rotated-held").tolist() == [False, True, False]
+
+
+def test_failed_runs_separate_at_the_last_step_they_touch_the_others() -> None:
+    lines = np.array([[3.0, 2.0, 1.0, 0.5], [3.0, 2.5, 2.0, 1.5], [2.5, 2.2, 1.2, 0.6]])
+    lost = np.array([False, True, False])
+    assert separated(lines, lost) == 1
+    assert separated(lines[:, 1:], lost) == 0
+    assert separated(lines[[0, 0, 2]], lost) is None
+
+
+def test_a_figure_row_carries_the_seeds_the_interval_and_the_printed_numbers() -> None:
+    test = {"mean": 0.034, "low": 0.013, "high": 0.056, "n": 10}
+    cell = {"differences": [0.01, 0.05, -0.002], "test": test, "wins": 9}
+    found = contrast_row("against bytes", cell, 0.035)
+    assert (found.mean, found.low, found.high) == (0.034, 0.013, 0.056)
+    assert found.seeds.tolist() == [0.01, 0.05, -0.002]
+    assert found.note == "$+0.034$  [$+0.013$, $+0.056$]   $p$ = 0.035   9 of 10"
+    assert "$p$" not in contrast_row("es-pt", cell, None).note
