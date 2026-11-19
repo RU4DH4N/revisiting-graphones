@@ -1,6 +1,6 @@
 # Revisiting Graphones for Language Modelling
 
-Supplementary work to [Revisiting Graphones for Language Modelling](10.5281/zenodo.24356108).
+Supplementary work to [Revisiting Graphones for Language Modelling](https://doi.org/10.5281/zenodo.24356108).
 
 ## Layout
 
