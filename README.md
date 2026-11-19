@@ -1,6 +1,6 @@
-# Self-Weighting Graphones
+# Revisiting Graphones for Language Modelling
 
-Supplementary work to [Self-Weighting Graphones](#).
+Supplementary work to [Revisiting Graphones for Language Modelling](10.5281/zenodo.24356108).
 
 ## Layout
 
